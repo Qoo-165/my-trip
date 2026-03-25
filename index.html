@@ -8,53 +8,61 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8f9fa; }
-        .date-item.active { background: #fffcf0; border-color: #f59e0b !important; color: #b45309; transform: scale(1.05); }
-        .trans-btn { @apply px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold transition-all bg-white text-slate-500; }
-        .trans-btn.selected { @apply bg-blue-600 border-blue-600 text-white shadow-md; }
-        .poi-row { @apply flex gap-2 mb-3 items-center animate-fadeIn; }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #F3F4F6; color: #1F2937; }
+        
+        /* 日期導覽樣式 */
+        .date-item { @apply flex-none flex flex-col items-center justify-center w-16 h-24 border-2 rounded-[24px] bg-white cursor-pointer transition-all duration-300; border-color: #E5E7EB; }
+        .date-item.active { background: #FFFBEB; border-color: #F59E0B !important; transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.2); }
+        .date-item.active .date-num { color: #B45309; }
+        
+        /* 行程卡片樣式 */
+        .poi-card { @apply flex items-center gap-4 p-4 bg-white rounded-2xl mb-3 border-l-4 border-l-slate-800 shadow-sm hover:shadow-md transition-shadow; }
+        .voucher-card { @apply p-4 bg-slate-100 rounded-2xl flex items-center gap-3 text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors; }
+        
+        /* 交通按鈕 */
+        .trans-btn { @apply px-4 py-2 rounded-xl border-2 border-slate-100 text-[11px] font-black transition-all bg-white text-slate-400; }
+        .trans-btn.selected { @apply border-slate-800 bg-slate-800 text-white shadow-md; }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slideIn { animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     </style>
 </head>
-<body class="pb-32">
+<body class="pb-20">
 
-    <header class="bg-white/90 backdrop-blur-md px-6 py-5 flex justify-between items-center sticky top-0 z-40 shadow-sm">
+    <header class="bg-white/80 backdrop-blur-lg px-6 py-6 flex justify-between items-center sticky top-0 z-40">
         <div class="flex items-center gap-3">
-            <span class="text-3xl">🍜</span>
+            <div class="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center text-xl shadow-lg shadow-slate-200">✈️</div>
             <div>
-                <h1 class="text-xl font-black text-slate-900">福岡吃貨團之旅</h1>
-                <p class="text-[10px] text-green-500 font-bold">● 已連線同步</p>
+                <h1 class="text-xl font-[900] tracking-tight text-slate-900 uppercase">Fukuoka Trip</h1>
+                <p class="text-[10px] text-orange-500 font-black tracking-widest uppercase">Eat · Pray · Love</p>
             </div>
         </div>
-        <button onclick="showModal()" class="bg-slate-900 text-white text-xs px-5 py-3 rounded-2xl font-black shadow-lg">+ 新增行程</button>
+        <button onclick="showModal()" class="bg-slate-900 text-white text-[11px] px-5 py-3 rounded-xl font-black shadow-xl shadow-slate-200 active:scale-95 transition-all uppercase tracking-widest">Add Plan</button>
     </header>
 
-    <div class="bg-white border-b overflow-x-auto flex px-6 py-5 gap-4 no-scrollbar sticky top-[85px] z-30" id="date-nav"></div>
+    <div class="bg-white border-b border-slate-100 overflow-x-auto flex px-6 py-6 gap-4 no-scrollbar sticky top-[88px] z-30" id="date-nav"></div>
 
-    <main class="p-6 max-w-2xl mx-auto" id="main-content">
-        <div class="text-center py-20 text-slate-300 font-bold italic">正在開啟你的美食地圖...</div>
-    </main>
+    <main class="p-6 max-w-2xl mx-auto" id="main-content"></main>
 
-    <div id="modal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-end sm:items-center justify-center backdrop-blur-sm">
-        <div class="bg-white w-full max-w-xl rounded-t-[40px] p-8 shadow-2xl max-h-[95vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-black text-slate-800">編輯行程詳細</h3>
-                <button onclick="hideModal()" class="text-slate-300 p-2"><i class="fa-solid fa-circle-xmark text-2xl"></i></button>
+    <div id="modal" class="fixed inset-0 bg-slate-900/40 hidden z-50 flex items-end sm:items-center justify-center backdrop-blur-sm px-4">
+        <div class="bg-white w-full max-w-xl rounded-[40px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto animate-slideIn">
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="text-2xl font-[900] text-slate-900">行程設定</h3>
+                <button onclick="hideModal()" class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
-            <div class="space-y-6 text-sm">
+            <div class="space-y-6">
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 ml-1">地區 (如: 博多)</label><input type="text" id="in-city" class="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none focus:ring-2 ring-orange-100"></div>
-                    <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 ml-1">主目的地</label><input type="text" id="in-dest" class="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none focus:ring-2 ring-orange-100"></div>
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase">City</label><input type="text" id="in-city" placeholder="博多" class="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none font-bold"></div>
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase">Topic</label><input type="text" id="in-dest" placeholder="吃貨開團" class="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none font-bold"></div>
                 </div>
 
-                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 ml-1">住宿飯店 🏨</label><input type="text" id="in-hotel" class="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none"></div>
+                <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase">Hotel 🏨</label><input type="text" id="in-hotel" class="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none font-bold"></div>
 
                 <div>
-                    <label class="text-[10px] font-bold text-slate-400 block mb-2 ml-1">交通工具 (可複選)</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-2">Transport</label>
                     <div class="flex flex-wrap gap-2 mb-3" id="trans-tags-container">
                         <button class="trans-btn" onclick="toggleTrans(this)">電車</button>
                         <button class="trans-btn" onclick="toggleTrans(this)">巴士</button>
@@ -62,20 +70,28 @@
                         <button class="trans-btn" onclick="toggleTrans(this)">步行</button>
                         <button class="trans-btn" onclick="toggleTrans(this)">飛機</button>
                     </div>
-                    <input type="text" id="in-trans-custom" placeholder="還有其他的嗎？自行填寫..." class="w-full bg-slate-50 border-none p-3 rounded-xl outline-none text-xs">
+                    <input type="text" id="in-trans-custom" placeholder="其他交通..." class="w-full bg-slate-50 border-none p-3 rounded-xl outline-none text-xs font-bold">
                 </div>
 
                 <div>
                     <div class="flex justify-between items-center mb-3">
-                        <label class="text-[10px] font-bold text-slate-400 ml-1">📍 行程地點列表</label>
-                        <button onclick="addPoiRow()" class="text-blue-600 font-black text-[11px] bg-blue-50 px-3 py-1 rounded-full">+ 增加地點</button>
+                        <label class="text-[10px] font-black text-slate-400 uppercase">Schedule 地點清單</label>
+                        <button onclick="addPoiRow()" class="text-blue-600 font-black text-[11px]">+ 新增地點</button>
                     </div>
-                    <div id="poi-container" class="space-y-1"></div>
+                    <div id="poi-container" class="space-y-2"></div>
                 </div>
 
-                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 ml-1">Google Maps 綜合路線連結</label><input type="text" id="in-map" class="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none" placeholder="貼上 Google Maps 分享網址"></div>
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-[10px] font-black text-slate-400 uppercase">Vouchers 憑證連結</label>
+                        <button onclick="addVoucherRow()" class="text-purple-600 font-black text-[11px]">+ 新增憑證</button>
+                    </div>
+                    <div id="voucher-container" class="space-y-2"></div>
+                </div>
 
-                <button onclick="saveItem()" class="w-full bg-orange-500 text-white py-5 rounded-3xl font-black text-lg shadow-xl shadow-orange-100 hover:bg-orange-600 transition-all">儲存並同步到雲端</button>
+                <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase font-bold">Google Maps 路線網址</label><input type="text" id="in-map" class="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none text-xs font-bold"></div>
+
+                <button onclick="saveItem()" class="w-full bg-slate-900 text-white py-5 rounded-[24px] font-[900] text-lg shadow-2xl shadow-slate-300 active:scale-95 transition-all">SAVE SETTINGS</button>
             </div>
         </div>
     </div>
@@ -83,7 +99,7 @@
     <script>
         // ======= ⚙️ 核心設定區 =======
         const SB_URL = 'https://mklbhyinzgruetajxkvq.supabase.co'; 
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rbGJoeWluemdydWV0YWp4a3ZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NDMyNzksImV4cCI6MjA5MDAxOTI3OX0.XlQDwt4thOB7NH09f_fUkgHeMx-kR_Kw-SFQgPRR8V0'; // 👈 [重要] 請貼上你的 Anon Key
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rbGJoeWluemdydWV0YWp4a3ZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NDMyNzksImV4cCI6MjA5MDAxOTI3OX0.XlQDwt4thOB7NH09f_fUkgHeMx-kR_Kw-SFQgPRR8V0'; // 👈 請更換
         const TOTAL_DAYS = 5; 
         const START_DATE = '2026-07-27'; 
         // ============================
@@ -102,28 +118,38 @@
         function addPoiRow(time = '', name = '') {
             const container = document.getElementById('poi-container');
             const div = document.createElement('div');
-            div.className = 'poi-row';
+            div.className = 'flex gap-2 animate-slideIn';
             div.innerHTML = `
-                <input type="text" placeholder="時間" value="${time}" class="w-20 bg-slate-50 border-none p-3 rounded-xl outline-none text-xs poi-time font-bold">
-                <input type="text" placeholder="地點名稱" value="${name}" class="flex-1 bg-slate-50 border-none p-3 rounded-xl outline-none text-xs poi-name font-bold">
-                <button onclick="this.parentElement.remove()" class="text-slate-300 hover:text-red-500 px-2 transition-colors"><i class="fa-solid fa-trash-can"></i></button>
+                <input type="text" placeholder="Time" value="${time}" class="w-20 bg-slate-50 border-none p-3 rounded-xl outline-none text-xs font-black poi-time">
+                <input type="text" placeholder="Location Name" value="${name}" class="flex-1 bg-slate-50 border-none p-3 rounded-xl outline-none text-xs font-black poi-name">
+                <button onclick="this.parentElement.remove()" class="text-slate-300 px-1"><i class="fa-solid fa-trash-can"></i></button>
+            `;
+            container.appendChild(div);
+        }
+
+        function addVoucherRow(title = '', url = '') {
+            const container = document.getElementById('voucher-container');
+            const div = document.createElement('div');
+            div.className = 'flex gap-2 animate-slideIn';
+            div.innerHTML = `
+                <input type="text" placeholder="憑證名稱" value="${title}" class="w-24 bg-slate-50 border-none p-3 rounded-xl outline-none text-xs font-black v-title">
+                <input type="text" placeholder="網址 http://..." value="${url}" class="flex-1 bg-slate-50 border-none p-3 rounded-xl outline-none text-xs font-black v-url">
+                <button onclick="this.parentElement.remove()" class="text-slate-300 px-1"><i class="fa-solid fa-trash-can"></i></button>
             `;
             container.appendChild(div);
         }
 
         function initDateNav() {
-            const nav = document.getElementById('date-nav');
-            nav.innerHTML = '';
+            const nav = document.getElementById('date-nav'); nav.innerHTML = '';
             const startDate = new Date(START_DATE);
+            const weekNames = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
             for(let i=1; i<=TOTAL_DAYS; i++) {
-                const cur = new Date(startDate);
-                cur.setDate(startDate.getDate() + (i-1));
+                const cur = new Date(startDate); cur.setDate(startDate.getDate() + (i-1));
                 const mm = (cur.getMonth()+1).toString().padStart(2,'0');
                 const dd = cur.getDate().toString().padStart(2,'0');
-                const week = ['日','一','二','三','四','五','六'][cur.getDay()];
                 const item = document.createElement('div');
-                item.className = `date-item flex-none flex flex-col items-center justify-center w-16 h-20 border-2 rounded-3xl bg-white cursor-pointer transition-all ${i===currentDay ? 'active' : 'border-slate-50 text-slate-300'}`;
-                item.innerHTML = `<span class="text-[10px] font-bold">${mm}/${dd}</span><span class="text-xl font-black">${dd}</span><span class="text-[10px] font-bold">周${week}</span>`;
+                item.className = `date-item ${i===currentDay ? 'active' : ''}`;
+                item.innerHTML = `<span class="text-[9px] font-black text-slate-400">${mm}/${dd}</span><span class="text-2xl font-[900] date-num text-slate-800">${dd}</span><span class="text-[9px] font-black text-slate-400">${weekNames[cur.getDay()]}</span>`;
                 item.onclick = () => { currentDay = i; initDateNav(); loadData(); };
                 nav.appendChild(item);
             }
@@ -137,37 +163,52 @@
         function render(item) {
             const main = document.getElementById('main-content');
             if(!item) {
-                main.innerHTML = `<div class="text-center py-20 bg-white rounded-[40px] shadow-sm border border-slate-50 animate-fadeIn"><p class="text-slate-400 font-bold mb-4">Day ${currentDay} 尚未規劃行程</p><button onclick="showModal()" class="bg-slate-900 text-white px-6 py-3 rounded-2xl text-xs font-black shadow-lg">開始規劃今日行程</button></div>`;
+                main.innerHTML = `<div class="text-center py-20 bg-white rounded-[40px] shadow-sm animate-slideIn"><p class="text-slate-400 font-black mb-4 uppercase tracking-widest text-xs">No Data for Day ${currentDay}</p><button onclick="showModal()" class="bg-slate-900 text-white px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest">+ Create</button></div>`;
                 return;
             }
 
-            const transHtml = [...(item.transport_tags || []), item.transport_custom].filter(Boolean).map(t => `<span class="bg-slate-100 px-3 py-1 rounded-full text-[10px] font-bold text-slate-500">${t}</span>`).join('');
+            const transHtml = [...(item.transport_tags || []), item.transport_custom].filter(Boolean).map(t => `<span class="bg-slate-100 px-3 py-1 rounded-full text-[10px] font-black text-slate-500 uppercase">${t}</span>`).join('');
+            
             const poisHtml = (item.poi_list || []).map((p, idx) => `
-                <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl mb-3 border border-slate-100">
-                    <span class="bg-slate-800 text-white w-7 h-7 rounded-full text-[10px] flex items-center justify-center font-black shrink-0">${idx+1}</span>
-                    <div class="flex-1"><div class="text-[10px] text-orange-500 font-black">${p.time}</div><div class="font-black text-slate-700 text-sm">${p.name}</div></div>
+                <div class="poi-card">
+                    <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-[11px] font-[900]">${idx+1}</div>
+                    <div class="flex-1"><div class="text-[10px] text-orange-500 font-black uppercase">${p.time}</div><div class="font-[900] text-slate-800">${p.name}</div></div>
                 </div>
             `).join('');
 
+            const vouchersHtml = (item.vouchers || []).map(v => `
+                <a href="${v.url}" target="_blank" class="voucher-card"><i class="fa-solid fa-paperclip"></i><span>${v.title}</span><i class="fa-solid fa-arrow-up-right-from-square ml-auto opacity-30"></i></a>
+            `).join('');
+
             main.innerHTML = `
-                <div class="bg-white rounded-[40px] p-8 shadow-xl border border-slate-50 animate-fadeIn relative">
-                    <div class="flex justify-between items-start mb-6 border-b border-slate-50 pb-6">
-                        <h2 class="text-3xl font-black text-slate-800">Day ${currentDay} <span class="text-[10px] bg-orange-100 text-orange-600 px-3 py-1.5 rounded-full align-middle ml-2 font-black">${item.stay_city || '福岡'}</span></h2>
-                        <div class="flex gap-4"><button onclick="prepareEdit()" class="text-slate-300 hover:text-blue-500"><i class="fa-solid fa-pen-to-square text-xl"></i></button><button onclick="deleteDay()" class="text-slate-300 hover:text-red-500"><i class="fa-solid fa-trash-can text-xl"></i></button></div>
-                    </div>
-
-                    <div class="grid gap-4 mb-8 text-sm">
-                        <div class="flex gap-4"><span class="text-slate-400 font-bold w-12 text-xs">目的地</span><span class="font-black text-slate-700">${item.destination || '---'}</span></div>
-                        <div class="flex gap-4"><span class="text-slate-400 font-bold w-12 text-xs">住宿</span><span class="font-black text-slate-700">${item.accommodation || '---'}</span></div>
-                        <div class="flex gap-4 items-center"><span class="text-slate-400 font-bold w-12 text-xs">交通</span><div class="flex flex-wrap gap-2">${transHtml || '<span class="text-slate-300">未設定</span>'}</div></div>
-                    </div>
-
-                    <div class="pt-8 border-t border-dashed border-slate-200">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">📍 行程地點</h3>
-                            ${item.google_map_url ? `<a href="${item.google_map_url}" target="_blank" class="text-blue-600 text-[10px] font-black border-2 border-blue-50 px-4 py-2 rounded-full bg-blue-50">開啟路線 ↗</a>` : ''}
+                <div class="animate-slideIn relative">
+                    <div class="bg-white rounded-[40px] p-8 shadow-2xl shadow-slate-200 mb-6">
+                        <div class="flex justify-between items-start mb-8">
+                            <div>
+                                <span class="text-[10px] font-black text-orange-500 uppercase tracking-widest">${item.stay_city || 'Fukuoka'}</span>
+                                <h2 class="text-4xl font-[900] text-slate-900 leading-tight">DAY ${currentDay}</h2>
+                                <h3 class="text-lg font-bold text-slate-400">${item.destination || '---'}</h3>
+                            </div>
+                            <div class="flex gap-4"><button onclick="prepareEdit()" class="text-slate-200 hover:text-slate-900"><i class="fa-solid fa-pen-nib text-xl"></i></button><button onclick="deleteDay()" class="text-slate-200 hover:text-red-500"><i class="fa-solid fa-trash-can text-xl"></i></button></div>
                         </div>
-                        <div class="grid sm:grid-cols-2 gap-2">${poisHtml || '<p class="text-slate-300 italic text-sm">無地點資料</p>'}</div>
+
+                        <div class="space-y-4 mb-10 text-[13px]">
+                            <div class="flex items-center gap-4"><span class="w-8 text-center text-slate-300"><i class="fa-solid fa-hotel"></i></span><span class="font-black text-slate-700">${item.accommodation || 'Not Set'}</span></div>
+                            <div class="flex items-center gap-4"><span class="w-8 text-center text-slate-300"><i class="fa-solid fa-taxi"></i></span><div class="flex flex-wrap gap-2">${transHtml}</div></div>
+                        </div>
+
+                        <div class="pt-8 border-t-2 border-slate-50">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="font-[900] text-slate-900 text-sm uppercase tracking-widest">Schedule</h3>
+                                ${item.google_map_url ? `<a href="${item.google_map_url}" target="_blank" class="text-[10px] font-black bg-blue-50 text-blue-600 px-4 py-2 rounded-full">MAPS ↗</a>` : ''}
+                            </div>
+                            <div class="space-y-1">${poisHtml || '<p class="text-slate-300 italic text-xs">No points added</p>'}</div>
+                        </div>
+
+                        <div class="pt-8 mt-4 border-t-2 border-slate-50">
+                            <h3 class="font-[900] text-slate-900 text-sm uppercase tracking-widest mb-4">Vouchers</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${vouchersHtml || '<p class="text-slate-300 italic text-xs">No vouchers added</p>'}</div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -185,16 +226,22 @@
                 document.querySelectorAll('.trans-btn').forEach(btn => btn.classList.toggle('selected', selectedTrans.includes(btn.innerText)));
                 document.getElementById('poi-container').innerHTML = '';
                 (data.poi_list || []).forEach(p => addPoiRow(p.time, p.name));
+                document.getElementById('voucher-container').innerHTML = '';
+                (data.vouchers || []).forEach(v => addVoucherRow(v.title, v.url));
                 showModal();
             }
         }
 
         async function saveItem() {
-            const poiRows = document.querySelectorAll('.poi-row');
-            const poiList = Array.from(poiRows).map(row => ({
+            const poiList = Array.from(document.querySelectorAll('#poi-container > div')).map(row => ({
                 time: row.querySelector('.poi-time').value,
                 name: row.querySelector('.poi-name').value
             })).filter(p => p.name);
+
+            const voucherList = Array.from(document.querySelectorAll('#voucher-container > div')).map(row => ({
+                title: row.querySelector('.v-title').value,
+                url: row.querySelector('.v-url').value
+            })).filter(v => v.title);
 
             const newItem = {
                 day_num: currentDay,
@@ -204,30 +251,30 @@
                 transport_tags: selectedTrans,
                 transport_custom: document.getElementById('in-trans-custom').value,
                 google_map_url: document.getElementById('in-map').value,
-                poi_list: poiList
+                poi_list: poiList,
+                vouchers: voucherList
             };
 
-            const { error } = await _supabase.from('trips').upsert([newItem], { onConflict: 'day_num' });
-            if(error) alert(error.message);
-            else { hideModal(); loadData(); }
+            await _supabase.from('trips').upsert([newItem], { onConflict: 'day_num' });
+            hideModal(); loadData();
         }
 
         async function deleteDay() {
-            if(!confirm("確定要刪除這天的所有行程嗎？")) return;
+            if(!confirm("確定要刪除這天行程？")) return;
             await _supabase.from('trips').delete().eq('day_num', currentDay);
             loadData();
         }
 
         function showModal() { 
             document.getElementById('modal').classList.remove('hidden');
-            if(document.getElementById('poi-container').children.length === 0) addPoiRow();
+            if(!document.getElementById('poi-container').children.length) addPoiRow();
+            if(!document.getElementById('voucher-container').children.length) addVoucherRow();
         }
         function hideModal() { 
             document.getElementById('modal').classList.add('hidden');
-            // 清空交通選擇
-            selectedTrans = [];
-            document.querySelectorAll('.trans-btn').forEach(btn => btn.classList.remove('selected'));
+            selectedTrans = []; document.querySelectorAll('.trans-btn').forEach(btn => btn.classList.remove('selected'));
             document.getElementById('poi-container').innerHTML = '';
+            document.getElementById('voucher-container').innerHTML = '';
         }
 
         window.onload = () => { initDateNav(); loadData(); };
