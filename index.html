@@ -394,6 +394,13 @@ let eCredDayId = null, eCredIdx = null;
 let mapDayId = null, mapQ = null;
 
 // ─── INIT ─────────────────────────────────────────────────
+// normalize: id → string, stops/creds → string
+function nd(d) {
+  return { ...d, id: String(d.id),
+    stops: typeof d.stops === 'string' ? d.stops : JSON.stringify(d.stops || []),
+    creds: typeof d.creds === 'string' ? d.creds : JSON.stringify(d.creds || []) };
+}
+
 async function init() {
   try {
     const { data, error } = await db.from('trips').select('*').order('sort_order');
@@ -447,7 +454,7 @@ async function seedFukuoka() {
     await db.from('trips').insert(r).catch(()=>{});
   }
   const { data } = await db.from('trips').select('*').order('sort_order');
-  if (data?.length) days = data;
+  if (data?.length) days = data.map(nd);
 }
 
 // ─── REALTIME ─────────────────────────────────────────────
@@ -455,14 +462,17 @@ function doSubscribe() {
   db.channel('trips-ch')
     .on('postgres_changes', { event:'*', schema:'public', table:'trips' }, async () => {
       const { data } = await db.from('trips').select('*').order('sort_order');
-      if (data) { days = data; renderAll(); toast('🔄 行程已同步更新'); }
+      if (data) { days = data.map(nd); renderAll(); toast('🔄 行程已同步更新'); }
     })
     .subscribe(s => setLive(s === 'SUBSCRIBED'));
 }
 
 // ─── RENDER ───────────────────────────────────────────────
 function renderAll() {
-  if (!currentId && days.length) currentId = days[0].id;
+  // currentId がまだ days に存在するか確認、なければ最初の日を選択
+  if (!currentId || !days.find(x => x.id === currentId)) {
+    currentId = days.length ? days[0].id : null;
+  }
   renderTabs();
   renderContent();
 }
@@ -623,12 +633,12 @@ async function saveDay() {
       inserted = Array.isArray(data) ? data[0] : data;
     } catch(e) { console.warn('insert error:', e); }
     if (inserted && inserted.id) {
-      days.push(inserted);
-      currentId = inserted.id;
+      days.push(nd(inserted));
+      currentId = String(inserted.id);
     } else {
       // 離線 fallback：用本地暫存
-      const localId = Date.now();
-      days.push({ ...nd, id: localId });
+      const localId = String(Date.now());
+      days.push({ ...p, day:`第${o}天`, note:'', stops:'[]', creds:'[]', sort_order:o, id: localId });
       currentId = localId;
     }
     closeOv('dayOv'); toast('✅ 行程已新增'); renderAll();
@@ -637,18 +647,20 @@ async function saveDay() {
 
 async function delDay(id) {
   if (!confirm('確定刪除這天？')) return;
-  try { await db.from('trips').delete().eq('id',id); } catch(e) {}
-  days = days.filter(x=>x.id!==id);
-  if (currentId===id) currentId = days[0]?.id||null;
+  const sid = String(id);
+  try { await db.from('trips').delete().eq('id', sid); } catch(e) {}
+  days = days.filter(x=>x.id!==sid);
+  if (currentId===sid) currentId = days[0]?.id||null;
   renderAll(); toast('🗑 已刪除');
 }
 
 async function upDay(id, u) {
+  const sid = String(id);
   try {
-    const { error } = await db.from('trips').update(u).eq('id', id);
+    const { error } = await db.from('trips').update(u).eq('id', sid);
     if (error) console.warn('upDay error:', error);
   } catch(e) { console.warn('upDay exception:', e); }
-  const d = days.find(x=>x.id===id);
+  const d = days.find(x => x.id === sid);
   if (d) Object.assign(d, u);
   renderContent();
 }
@@ -681,7 +693,7 @@ async function saveStop() {
   stops.sort((a,b)=>(a.time||'').localeCompare(b.time||''));
   d.stops = JSON.stringify(stops);
   try {
-    const { error } = await db.from('trips').update({ stops: d.stops }).eq('id', dayId);
+    const { error } = await db.from('trips').update({ stops: d.stops }).eq('id', String(dayId));
     if (error) console.warn('saveStop error:', error);
   } catch(e) { console.warn('saveStop exception:', e); }
   closeOv('stopOv'); toast('✅ 地點已儲存'); renderContent();
@@ -691,7 +703,7 @@ async function delStop(dayId, idx) {
   const d = days.find(x=>x.id===dayId); if (!d) return;
   const stops = pj(d.stops); stops.splice(idx,1);
   d.stops = JSON.stringify(stops);
-  try { await db.from('trips').update({ stops: d.stops }).eq('id', dayId); } catch(e) {}
+  try { await db.from('trips').update({ stops: d.stops }).eq('id', String(dayId)); } catch(e) {}
   toast('🗑 地點已刪除'); renderContent();
 }
 
@@ -725,7 +737,7 @@ async function saveCred() {
   if (eCredIdx!==null) creds[eCredIdx]=c; else creds.push(c);
   d.creds = JSON.stringify(creds);
   try {
-    const { error } = await db.from('trips').update({ creds: d.creds }).eq('id', eCredDayId);
+    const { error } = await db.from('trips').update({ creds: d.creds }).eq('id', String(eCredDayId));
     if (error) console.warn('saveCred error:', error);
   } catch(e) { console.warn('saveCred exception:', e); }
   closeOv('credOv'); toast('✅ 憑證已儲存'); renderContent();
@@ -735,7 +747,7 @@ async function delCred(dayId, idx) {
   const d = days.find(x=>x.id===dayId); if (!d) return;
   const creds = pj(d.creds); creds.splice(idx,1);
   d.creds = JSON.stringify(creds);
-  try { await db.from('trips').update({ creds: d.creds }).eq('id', dayId); } catch(e) {}
+  try { await db.from('trips').update({ creds: d.creds }).eq('id', String(dayId)); } catch(e) {}
   toast('🗑 憑證已刪除'); renderContent();
 }
 
