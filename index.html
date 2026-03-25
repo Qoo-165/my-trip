@@ -1,152 +1,23 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>個人筆記本</title> <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body { display: none; } /* 預設先隱藏整個網頁，驗證成功才顯示 */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
-    </style>
-</head>
-<body class="bg-slate-50 min-h-screen pb-20">
-
-    <div class="max-w-3xl mx-auto px-4 py-6">
-        <header class="mb-8 text-center">
-            <h1 class="text-3xl font-bold text-slate-800">我們的旅遊規劃 🗺️</h1>
-            <p class="text-slate-500 mt-2">密碼保護中 · 即時同步</p>
-        </header>
-
-        <div id="tab-container" class="flex flex-wrap gap-2 mb-8 justify-center"></div>
-
-        <div class="flex justify-between items-end mb-4">
-            <h2 id="current-day-display" class="text-2xl font-bold text-blue-600">Day 1 行程</h2>
-            <button onclick="lockSite()" class="text-xs text-slate-400 underline">登出鎖定</button>
-        </div>
-
-        <div id="item-list" class="space-y-4 mb-8"></div>
-
-        <button onclick="addItem()" class="w-full py-4 border-2 border-dashed border-blue-300 rounded-xl text-blue-500 hover:bg-blue-50 transition-all font-medium">
-            <i class="fa-solid fa-plus mr-2"></i> 新增行程項目
-        </button>
-    </div>
-
+    <title>個人筆記本</title>
     <script>
-        // ======= ⚙️ 設定區 =======
-        const TOTAL_DAYS = 5; 
-        const APP_KEY = 'fukuoka-danang-secret-2026'; // 建議隨便改一個暗號
-        const PASSWORD = '1109'; // <--- 在這裡設定你的密碼！
-        // ========================
-
-        // 🔐 密碼驗證邏輯
-        function checkAuth() {
-            const sessionAuth = sessionStorage.getItem('isAuth');
-            if (sessionAuth === 'true') {
+        const PASS = '1109'; // 你的密碼
+        function auth() {
+            const input = prompt('請輸入密碼：');
+            if (input === PASS) {
                 document.body.style.display = 'block';
-                initSite();
             } else {
-                const userInput = prompt('請輸入通關密語：');
-                if (userInput === PASSWORD) {
-                    sessionStorage.setItem('isAuth', 'true');
-                    document.body.style.display = 'block';
-                    initSite();
-                } else {
-                    alert('密碼錯誤，請重新整理頁面再試。');
-                    window.location.reload();
-                }
+                alert('錯誤');
+                location.reload();
             }
         }
-
-        function lockSite() {
-            sessionStorage.removeItem('isAuth');
-            window.location.reload();
-        }
-
-        const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-        let currentDay = 1;
-
-        function initSite() {
-            const tabContainer = document.getElementById('tab-container');
-            tabContainer.innerHTML = '';
-            for (let i = 1; i <= TOTAL_DAYS; i++) {
-                const btn = document.createElement('button');
-                btn.id = `tab-${i}`;
-                btn.innerText = `Day ${i}`;
-                btn.onclick = () => switchDay(i);
-                btn.className = i === 1 
-                    ? 'tab-btn px-5 py-2 rounded-full bg-blue-600 text-white shadow-md transition-all' 
-                    : 'tab-btn px-5 py-2 rounded-full bg-white text-slate-600 hover:bg-slate-100 transition-all';
-                tabContainer.appendChild(btn);
-            }
-            loadItems();
-        }
-
-        function switchDay(day) {
-            currentDay = day;
-            document.getElementById('current-day-display').innerText = `Day ${day} 行程`;
-            for (let i = 1; i <= TOTAL_DAYS; i++) {
-                const btn = document.getElementById(`tab-${i}`);
-                if (btn) {
-                    btn.className = i === day 
-                        ? 'tab-btn px-5 py-2 rounded-full bg-blue-600 text-white shadow-md transition-all' 
-                        : 'tab-btn px-5 py-2 rounded-full bg-white text-slate-600 hover:bg-slate-100 transition-all';
-                }
-            }
-            loadItems();
-        }
-
-        function addItem() {
-            const id = Date.now().toString();
-            gun.get(APP_KEY).get(`day-${currentDay}`).get(id).put({ title: '', link: '', done: false });
-        }
-
-        function deleteItem(id) {
-            gun.get(APP_KEY).get(`day-${currentDay}`).get(id).put(null);
-        }
-
-        function updateItem(id, field, value) {
-            gun.get(APP_KEY).get(`day-${currentDay}`).get(id).get(field).put(value);
-        }
-
-        function loadItems() {
-            const listElement = document.getElementById('item-list');
-            listElement.innerHTML = '';
-            gun.get(APP_KEY).get(`day-${currentDay}`).map().on((data, id) => {
-                if (!data) {
-                    const existing = document.getElementById(`item-${id}`);
-                    if (existing) existing.remove();
-                    return;
-                }
-                let itemElement = document.getElementById(`item-${id}`);
-                if (!itemElement) {
-                    itemElement = document.createElement('div');
-                    itemElement.id = `item-${id}`;
-                    itemElement.className = "bg-white p-4 rounded-xl shadow-sm border border-slate-100 animate-fadeIn";
-                    listElement.appendChild(itemElement);
-                }
-                const hasLink = data.link && data.link.includes('http');
-                itemElement.innerHTML = `
-                    <div class="flex items-center gap-3 mb-3">
-                        <input type="checkbox" ${data.done ? 'checked' : ''} onchange="updateItem('${id}', 'done', this.checked)" class="w-5 h-5 rounded text-blue-600">
-                        <input type="text" value="${data.title || ''}" placeholder="景點..." oninput="updateItem('${id}', 'title', this.value)" class="flex-1 font-medium text-slate-700 focus:outline-none bg-transparent ${data.done ? 'line-through text-slate-400' : ''}">
-                        <button onclick="deleteItem('${id}')" class="text-slate-300 hover:text-red-400"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>
-                    <div class="flex gap-2 items-center">
-                        <div class="relative flex-1">
-                            <i class="fa-solid fa-link absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                            <input type="text" value="${data.link || ''}" placeholder="Google Map 連結" oninput="updateItem('${id}', 'link', this.value)" class="w-full pl-8 pr-3 py-1.5 text-sm bg-slate-50 rounded-lg border-none focus:ring-1 focus:ring-blue-200">
-                        </div>
-                        <a href="${hasLink ? data.link : '#'}" target="_blank" class="${hasLink ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400 pointer-events-none'} px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1">開啟連結 <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>
-                    </div>
-                `;
-            });
-        }
-
-        // 啟動驗證
-        checkAuth();
     </script>
+</head>
+<body style="display:none;" onload="auth()">
+    <h1>驗證成功！網頁正常運作中</h1>
+    <p>如果你看到這個畫面，代表你的網頁已經成功上線了。</p>
 </body>
 </html>
