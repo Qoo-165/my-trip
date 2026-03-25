@@ -1,230 +1,731 @@
 <!DOCTYPE html>
+
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>福岡吃貨團 🍜</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background: #F9FAFB; color: #1F2937; }
-        
-        /* 日期導覽列 */
-        .date-item { @apply flex-none w-16 h-24 rounded-[20px] bg-white border-2 border-slate-100 flex flex-col items-center justify-center transition-all duration-300 cursor-pointer; }
-        .date-item.active { @apply border-orange-500 bg-orange-50 ring-4 ring-orange-50/50 scale-105; }
-        .date-item.active span { @apply text-orange-600; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>✈️ 2026 福岡五日遊</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: #efefef;
+  color: #1a1a1a;
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+}
 
-        /* 行程卡片 */
-        .stop-card { @apply bg-white p-4 rounded-2xl mb-4 shadow-sm border border-slate-50 flex gap-4 relative overflow-hidden; }
-        .stop-card::before { content: ''; @apply absolute left-0 top-0 bottom-0 w-1 bg-slate-800; }
-        
-        /* 交通標籤 */
-        .trans-tag { @apply px-3 py-1.5 rounded-xl border-2 border-slate-100 text-[11px] font-bold transition-all bg-white text-slate-400 cursor-pointer; }
-        .trans-tag.selected { @apply border-slate-800 bg-slate-800 text-white shadow-md; }
+/* ── TOP BAR ── */
+.topbar {
+background: #1a1a2e;
+color: white;
+padding: 14px 16px;
+display: flex;
+align-items: center;
+gap: 10px;
+position: sticky;
+top: 0;
+z-index: 100;
+}
+.topbar h1 { flex: 1; font-size: 1rem; font-weight: 700; }
+.live-dot-wrap { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: rgba(255,255,255,0.75); }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; animation: blink 1.8s infinite; }
+.live-dot.off { background: #f87171; animation: none; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.add-trip-btn {
+background: #333; color: white; border: none;
+padding: 7px 13px; border-radius: 8px;
+font-size: 0.78rem; font-family: inherit; cursor: pointer;
+}
+.add-trip-btn:hover { background: #444; }
 
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .drag-handle { @apply cursor-grab text-slate-200 hover:text-slate-400 p-2; }
-    </style>
+/* ── DATE TABS ── */
+.date-tabs-wrap {
+background: white;
+border-bottom: 1px solid #e8e8e8;
+overflow-x: auto; scrollbar-width: none;
+}
+.date-tabs-wrap::-webkit-scrollbar { display: none; }
+.date-tabs { display: flex; padding: 8px 10px 0; gap: 4px; min-width: max-content; }
+.date-tab {
+display: flex; flex-direction: column; align-items: center;
+padding: 8px 14px 10px; border-radius: 10px 10px 0 0;
+cursor: pointer; border-bottom: 3px solid transparent;
+min-width: 64px; transition: all 0.18s;
+}
+.date-tab:hover { background: #f7f7f7; }
+.date-tab.active { background: #f8f8f8; border-bottom-color: #1a1a2e; }
+.dt-mon { font-size: 0.6rem; color: #bbb; }
+.dt-day { font-size: 1.45rem; font-weight: 700; line-height: 1.1; color: #222; }
+.date-tab.active .dt-day { color: #1a1a2e; }
+.dt-wd { font-size: 0.6rem; color: #bbb; margin-top: 1px; }
+.dt-badge {
+margin-top: 5px; background: #f0f0f0; color: #666;
+font-size: 0.6rem; padding: 2px 8px; border-radius: 10px; font-weight: 500;
+}
+.date-tab.active .dt-badge { background: #e8e8f4; color: #1a1a2e; }
+
+/* ── DAY CARD ── */
+.day-card {
+background: white; margin: 12px;
+border-radius: 16px; overflow: hidden;
+box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.day-card-header { padding: 16px 18px 14px; border-bottom: 1px solid #f5f5f5; }
+.title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.day-title { font-size: 1.12rem; font-weight: 700; flex: 1; }
+.city-tag {
+font-size: 0.7rem; padding: 3px 10px; border-radius: 12px;
+background: #fff3e0; color: #e65100; font-weight: 500;
+}
+.city-tag.blue { background: #e3f2fd; color: #1565c0; }
+.city-tag.green { background: #e8f5e9; color: #2e7d32; }
+.ibt { background: none; border: none; cursor: pointer; font-size: 1rem; padding: 4px 6px; border-radius: 6px; }
+.ibt:hover { background: #f5f5f5; }
+.ibt.red:hover { background: #ffeaea; }
+
+.info-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; font-size: 0.84rem; }
+.lbl { color: #bbb; width: 36px; flex-shrink: 0; font-size: 0.76rem; padding-top: 1px; }
+.val { flex: 1; color: #1a1a1a; line-height: 1.45; }
+.pin { cursor: pointer; font-size: 0.82rem; }
+
+/* transport chips */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+display: inline-flex; align-items: center; gap: 3px;
+padding: 5px 11px; border-radius: 20px; font-size: 0.74rem;
+background: #f5f5f5; color: #666; border: 1.5px solid #ebebeb;
+cursor: pointer; user-select: none; transition: all 0.15s;
+}
+.chip.on { background: #1a1a2e; color: white; border-color: #1a1a2e; }
+
+/* ── MAP BAR ── */
+.map-bar {
+padding: 11px 18px; display: flex;
+align-items: center; justify-content: space-between;
+border-top: 1px solid #f5f5f5;
+}
+.map-bar span { font-size: 0.8rem; color: #888; }
+.gmap-btn {
+background: #e8f0fe; color: #1a56db; border: none;
+padding: 7px 14px; border-radius: 10px;
+font-size: 0.76rem; font-family: inherit; font-weight: 500;
+cursor: pointer; text-decoration: none;
+transition: background 0.15s;
+}
+.gmap-btn:hover { background: #d0e2fd; }
+
+/* inline map */
+.inline-map { margin: 0 18px 10px; border-radius: 12px; overflow: hidden; height: 185px; }
+.inline-map iframe { width: 100%; height: 100%; border: none; }
+
+/* ── STOPS ── */
+.stops { padding: 0 18px 10px; }
+.stop-row {
+display: flex; align-items: center; gap: 10px;
+padding: 11px 13px; background: #f8f8f8; border-radius: 12px;
+margin-bottom: 7px; cursor: pointer; transition: background 0.15s;
+}
+.stop-row:hover { background: #f0f0f0; }
+.snum {
+width: 27px; height: 27px; border-radius: 50%;
+background: #1a1a2e; color: white;
+display: flex; align-items: center; justify-content: center;
+font-size: 0.74rem; font-weight: 700; flex-shrink: 0;
+}
+.stime { font-size: 0.7rem; color: #bbb; width: 38px; flex-shrink: 0; }
+.sname { font-size: 0.86rem; font-weight: 500; flex: 1; }
+.sdel {
+background: none; border: none; cursor: pointer;
+color: #ccc; font-size: 0.82rem; padding: 2px 5px;
+border-radius: 5px; opacity: 0; transition: opacity 0.15s;
+}
+.stop-row:hover .sdel { opacity: 1; }
+.sdel:hover { background: #ffeaea; color: #e53935; }
+.add-stop {
+display: flex; align-items: center; gap: 7px;
+width: 100%; padding: 11px 13px;
+background: none; border: 1.5px dashed #ddd;
+border-radius: 12px; color: #bbb;
+font-size: 0.8rem; font-family: inherit;
+cursor: pointer; margin-bottom: 6px; transition: all 0.15s;
+}
+.add-stop:hover { border-color: #bbb; color: #888; }
+
+/* ── CREDS ── */
+.creds-sec { padding: 10px 18px 16px; border-top: 1px solid #f5f5f5; }
+.creds-lbl { font-size: 0.76rem; color: #bbb; margin-bottom: 8px; font-weight: 500; }
+.cred-row {
+display: flex; align-items: center; gap: 10px;
+padding: 10px 12px; background: #f8f8f8; border-radius: 12px;
+margin-bottom: 7px; cursor: pointer; transition: background 0.15s;
+text-decoration: none; color: inherit;
+}
+.cred-row:hover { background: #f0f0f0; }
+.cred-ico { font-size: 1.1rem; flex-shrink: 0; }
+.cred-info { flex: 1; min-width: 0; }
+.cred-name { font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cred-sub { font-size: 0.67rem; color: #bbb; margin-top: 1px; }
+.cred-thumb { width: 44px; height: 32px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+.cred-del { background: none; border: none; cursor: pointer; color: #ccc; font-size: 0.8rem; padding: 2px 5px; opacity: 0; transition: opacity 0.15s; }
+.cred-row:hover .cred-del { opacity: 1; }
+.add-cred {
+display: flex; align-items: center; gap: 7px;
+width: 100%; padding: 10px 12px;
+background: none; border: 1.5px dashed #ddd;
+border-radius: 12px; color: #bbb;
+font-size: 0.8rem; font-family: inherit; cursor: pointer; transition: all 0.15s;
+}
+.add-cred:hover { border-color: #bbb; color: #888; }
+
+/* ── SHEETS / MODALS ── */
+.overlay {
+display: none; position: fixed; inset: 0;
+background: rgba(0,0,0,0.45); z-index: 200;
+align-items: flex-end; backdrop-filter: blur(2px);
+}
+.overlay.open { display: flex; }
+.sheet {
+background: white; border-radius: 20px 20px 0 0;
+width: 100%; max-width: 480px; margin: 0 auto;
+padding: 20px 20px 36px; max-height: 92vh;
+overflow-y: auto; animation: slideUp 0.24s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sh-handle { width: 36px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 18px; }
+.sh-title { font-size: 1rem; font-weight: 700; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0; }
+.fg { margin-bottom: 13px; }
+.fg label { display: block; font-size: 0.74rem; color: #999; margin-bottom: 4px; font-weight: 500; }
+.fi, .fs, .ft {
+width: 100%; padding: 10px 12px;
+border: 1.5px solid #e8e8e8; border-radius: 10px;
+font-family: inherit; font-size: 0.87rem; color: #1a1a1a;
+background: white; outline: none; transition: border-color 0.15s;
+}
+.fi:focus, .ft:focus { border-color: #1a1a2e; }
+.ft { resize: vertical; min-height: 72px; }
+.f2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fchip {
+padding: 5px 13px; border-radius: 20px; font-size: 0.76rem;
+cursor: pointer; background: #f5f5f5; color: #666;
+border: 1.5px solid #ebebeb; transition: all 0.15s; user-select: none;
+}
+.fchip.sel { background: #1a1a2e; color: white; border-color: #1a1a2e; }
+.sh-btns { display: flex; gap: 10px; margin-top: 18px; }
+.bcx {
+flex: 1; padding: 12px; border: 1.5px solid #e8e8e8;
+border-radius: 12px; background: none; font-family: inherit;
+font-size: 0.87rem; color: #999; cursor: pointer;
+}
+.bsv {
+flex: 2; padding: 12px; background: #1a1a2e; color: white;
+border: none; border-radius: 12px; font-family: inherit;
+font-size: 0.87rem; font-weight: 700; cursor: pointer;
+}
+.bsv:hover { background: #2a2a4e; }
+
+/* cred type chips */
+.ctypes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 13px; }
+.ctype {
+padding: 5px 12px; border-radius: 20px; font-size: 0.75rem;
+cursor: pointer; background: #f5f5f5; color: #666;
+border: 1.5px solid #ebebeb; transition: all 0.15s;
+}
+.ctype.sel { background: #1a1a2e; color: white; border-color: #1a1a2e; }
+.img-row { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
+.ul-btn {
+display: flex; flex-direction: column; align-items: center; gap: 2px;
+padding: 12px 14px; border: 1.5px dashed #ddd; border-radius: 10px;
+cursor: pointer; color: #bbb; font-size: 0.7rem; flex-shrink: 0;
+}
+.ul-btn span { font-size: 1.1rem; }
+.prev-img { width: 100%; border-radius: 10px; margin-top: 8px; display: none; max-height: 110px; object-fit: cover; }
+
+/* toast */
+.toast {
+position: fixed; bottom: 24px; left: 50%;
+transform: translateX(-50%) translateY(80px);
+background: #1a1a2e; color: white;
+padding: 10px 20px; border-radius: 10px;
+font-size: 0.8rem; z-index: 999;
+transition: transform 0.28s ease; pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* fab */
+.fab {
+position: fixed; bottom: 24px; right: 24px;
+width: 50px; height: 50px; border-radius: 50%;
+background: #1a1a2e; color: white; border: none;
+font-size: 1.4rem; cursor: pointer;
+box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+display: flex; align-items: center; justify-content: center;
+z-index: 50; transition: transform 0.18s;
+}
+.fab:hover { transform: scale(1.09); }
+</style>
+
 </head>
-<body class="pb-24">
+<body>
 
-<div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative">
-    <header class="p-6 flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur-md z-50 border-b border-slate-50">
-        <div>
-            <h1 class="text-2xl font-[900] tracking-tighter text-slate-900">FUKUOKA <span class="text-orange-500">2026</span></h1>
-            <p class="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Foodie Adventure</p>
-        </div>
-        <div class="flex gap-2">
-            <button onclick="addDay()" class="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-lg active:scale-90 transition-all">＋</button>
-            <button onclick="save()" class="px-4 py-2 bg-orange-500 text-white text-[11px] font-[900] rounded-xl shadow-lg shadow-orange-100 uppercase">Save</button>
-        </div>
-    </header>
-
-    <div class="flex overflow-x-auto p-6 gap-4 no-scrollbar bg-white" id="date-nav"></div>
-
-    <main id="content" class="px-6 py-4">
-        <div class="animate-pulse flex flex-col gap-4">
-            <div class="h-32 bg-slate-100 rounded-3xl"></div>
-            <div class="h-32 bg-slate-100 rounded-3xl"></div>
-        </div>
-    </main>
+<div class="topbar">
+  <span>✈️</span>
+  <h1>2025 福岡五日遊</h1>
+  <div class="live-dot-wrap">
+    <div class="live-dot" id="liveDot"></div>
+    <span id="liveTxt">連線中</span>
+  </div>
+  <button class="add-trip-btn" onclick="openDaySheet()">＋ 新增行程</button>
 </div>
 
+<div class="date-tabs-wrap"><div class="date-tabs" id="tabs"></div></div>
+<div id="content"></div>
+
+<button class="fab" onclick="openStopSheet(null, currentId)">＋</button>
+
+<!-- STOP SHEET -->
+
+<div class="overlay" id="stopOv">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="stopTitle">新增地點</div>
+    <div class="fg"><label>地點名稱</label><input class="fi" id="sN" placeholder="例：博多駅"></div>
+    <div class="f2">
+      <div class="fg"><label>時間</label><input class="fi" type="time" id="sT" value="09:00"></div>
+      <div class="fg"><label>所屬天</label><select class="fs" id="sD"></select></div>
+    </div>
+    <div class="fg"><label>Google Maps 關鍵字</label><input class="fi" id="sM" placeholder="例：Hakata Station Fukuoka"></div>
+    <div class="fg"><label>備註</label><textarea class="ft" id="sNt" placeholder="注意事項…"></textarea></div>
+    <div class="sh-btns">
+      <button class="bcx" onclick="closeOv('stopOv')">取消</button>
+      <button class="bsv" onclick="saveStop()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- CRED SHEET -->
+
+<div class="overlay" id="credOv">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="credTitle">新增憑證</div>
+    <div class="fg"><label>名稱</label><input class="fi" id="cN" placeholder="例：相鐵Fresa Inn福岡"></div>
+    <div class="fg">
+      <label>類型</label>
+      <div class="ctypes" id="ctypes">
+        <div class="ctype" data-t="機票" onclick="pickCT(this)">✈️ 機票</div>
+        <div class="ctype sel" data-t="訂房" onclick="pickCT(this)">🏨 訂房</div>
+        <div class="ctype" data-t="餐廳" onclick="pickCT(this)">🍽 餐廳</div>
+        <div class="ctype" data-t="景點" onclick="pickCT(this)">🎫 景點</div>
+        <div class="ctype" data-t="交通" onclick="pickCT(this)">🚌 交通</div>
+        <div class="ctype" data-t="文件" onclick="pickCT(this)">📄 文件</div>
+        <div class="ctype" data-t="其他" onclick="pickCT(this)">🔗 其他</div>
+      </div>
+    </div>
+    <div class="fg"><label>網址 URL</label><input class="fi" id="cU" placeholder="https://…"></div>
+    <div class="fg"><label>說明文字</label><textarea class="ft" id="cDs" placeholder="說明…" style="min-height:56px"></textarea></div>
+    <div class="fg">
+      <label>預覽圖片</label>
+      <div class="img-row">
+        <label class="ul-btn"><span>🗂</span>上傳<input type="file" accept="image/*" style="display:none" onchange="imgUp(event)"></label>
+        <input class="fi" id="cI" placeholder="或貼上圖片URL" oninput="prevImg(this.value)" style="flex:1">
+      </div>
+      <img class="prev-img" id="credPrev">
+    </div>
+    <div class="sh-btns">
+      <button class="bcx" onclick="closeOv('credOv')">取消</button>
+      <button class="bsv" onclick="saveCred()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- DAY SHEET -->
+
+<div class="overlay" id="dayOv">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title">新增 / 編輯行程天</div>
+    <input type="hidden" id="dEid">
+    <div class="f2">
+      <div class="fg"><label>日期</label><input class="fi" type="date" id="dDt"></div>
+      <div class="fg"><label>城市</label><input class="fi" id="dCi" placeholder="例：福岡"></div>
+    </div>
+    <div class="fg"><label>今日目的地 / 主題</label><input class="fi" id="dDs" placeholder="例：太宰府・博多"></div>
+    <div class="fg"><label>行程概要</label><input class="fi" id="dIt" placeholder="例：參拜天滿宮，博多拉麵"></div>
+    <div class="fg"><label>住宿</label><input class="fi" id="dHt" placeholder="例：Cross Hotel Fukuoka"></div>
+    <div class="fg">
+      <label>交通方式（可複選）</label>
+      <div class="fchips" id="tChips">
+        <div class="fchip" data-v="電車" onclick="tgl(this)">🚆 電車</div>
+        <div class="fchip" data-v="巴士" onclick="tgl(this)">🚌 巴士</div>
+        <div class="fchip" data-v="計程車" onclick="tgl(this)">🚕 計程車</div>
+        <div class="fchip" data-v="步行" onclick="tgl(this)">🚶 步行</div>
+        <div class="fchip" data-v="飛機" onclick="tgl(this)">✈️ 飛機</div>
+        <div class="fchip" data-v="渡輪" onclick="tgl(this)">⛴ 渡輪</div>
+        <div class="fchip" data-v="租車" onclick="tgl(this)">🚗 租車</div>
+      </div>
+    </div>
+    <div class="sh-btns">
+      <button class="bcx" onclick="closeOv('dayOv')">取消</button>
+      <button class="bsv" onclick="saveDay()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-// ======= ⚙️ 填入你的資訊 =======
-const SB_URL = "https://mklbhyinzgruetajxkvq.supabase.co";
-const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rbGJoeWluemdydWV0YWp4a3ZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NDMyNzksImV4cCI6MjA5MDAxOTI3OX0.XlQDwt4thOB7NH09f_fUkgHeMx-kR_Kw-SFQgPRR8V0";
-const START_DATE = '2026-07-27';
-// =============================
+const SUPABASE_URL = 'https://mklbhyinzgruetajxkvq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rbGJoeWluemdydWV0YWp4a3ZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NDMyNzksImV4cCI6MjA5MDAxOTI3OX0.XlQDwt4thOB7NH09f_fUkgHeMx-kR_Kw-SFQgPRR8V0';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const _db = supabase.createClient(SB_URL, SB_KEY);
-const tripId = location.hash.replace("#","") || "fukuoka_main";
-let days = [];
-let current = 0;
+const WD = ['日','一','二','三','四','五','六'];
+const CICO = { 機票:'✈️', 訂房:'🏨', 餐廳:'🍽', 景點:'🎫', 交通:'🚌', 文件:'📄', 其他:'🔗' };
+const TICONS = { 電車:'🚆', 巴士:'🚌', 計程車:'🚕', 步行:'🚶', 飛機:'✈️', 渡輪:'⛴', 租車:'🚗' };
 
-async function load() {
-    let { data } = await _db.from("trips").select("*").eq("trip_id", tripId).order("day_num");
+let days = [], currentId = null;
+let eStopDayId = null, eStopIdx = null;
+let eCredDayId = null, eCredIdx = null;
+let mapDayId = null, mapQ = null;
+
+// ─── INIT ─────────────────────────────────────────────────
+async function init() {
+  try {
+    const { data, error } = await db.from('trips').select('*').order('sort_order');
+    if (error) throw error;
     days = data || [];
-    if(days.length === 0) await addDay();
-    render();
+    if (!days.length) await seedFukuoka();
+    setLive(true);
+  } catch(e) {
+    setLive(false);
+    localSeed();
+  }
+  renderAll();
+  doSubscribe();
 }
 
-function render() {
-    // 渲染日期導覽
-    const nav = document.getElementById("date-nav");
-    nav.innerHTML = "";
-    const startDate = new Date(START_DATE);
-    const weeks = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+function setLive(ok) {
+  document.getElementById('liveDot').className = 'live-dot' + (ok ? '' : ' off');
+  document.getElementById('liveTxt').textContent = ok ? '已連線' : '離線';
+}
 
-    days.forEach((day, i) => {
-        const cur = new Date(startDate);
-        cur.setDate(startDate.getDate() + i);
-        const active = (i === current) ? 'active' : '';
-        nav.innerHTML += `
-            <div class="date-item ${active}" onclick="selectDay(${i})">
-                <span class="text-[9px] font-black">${weeks[cur.getDay()]}</span>
-                <span class="text-2xl font-[900] my-1">${cur.getDate()}</span>
-                <span class="text-[9px] font-black opacity-40">${cur.getMonth()+1}月</span>
-            </div>
-        `;
-    });
+// ─── SEED ─────────────────────────────────────────────────
+function localSeed() {
+  days = [
+    mkD(1,'2025-07-27','福岡','福岡機場 → 博多','搭機抵達，博多夜遊','相鐵Fresa Inn博多駅前','飛機,電車',
+      [{name:'高雄小港機場',time:'06:00',map:'Kaohsiung International Airport',note:'提早2小時到達'},{name:'福岡國際機場',time:'11:30',map:'Fukuoka Airport International Terminal',note:'入境後買IC卡'},{name:'博多駅',time:'13:00',map:'Hakata Station Fukuoka',note:'地鐵空港線5分鐘'},{name:'中洲川端屋台',time:'18:30',map:'Nakasu Yatai Stalls Fukuoka',note:'必吃豚骨拉麵'}],
+      [{type:'機票',name:'台灣虎航 IT234 高雄→福岡',url:'#',desc:'06:00出發 11:30抵達',img:''}]),
+    mkD(2,'2025-07-28','太宰府','太宰府天滿宮 & 柳川','參拜天滿宮，遊柳川','相鐵Fresa Inn博多駅前','電車,渡輪',
+      [{name:'博多駅',time:'08:30',map:'Hakata Station Fukuoka',note:'搭西鐵到太宰府'},{name:'太宰府天滿宮',time:'09:30',map:'Dazaifu Tenmangu Shrine',note:'買梅枝餅！'},{name:'柳川川下り',time:'14:00',map:'Yanagawa boat tour Fukuoka',note:'遊船約70分鐘，成人¥1500'}],
+      [{type:'景點',name:'柳川遊船預約',url:'#',desc:'14:00 成人¥1500',img:''}]),
+    mkD(3,'2025-07-29','糸島','糸島海岸','海邊咖啡廳，二見浦夫妻岩','相鐵Fresa Inn博多駅前','電車,步行',
+      [{name:'JR 筑前前原駅',time:'09:00',map:'Chikuzen-Maebaru Station Itoshima',note:'轉巴士'},{name:'二見浦夫妻岩',time:'10:30',map:'Meoto Iwa Itoshima',note:'日出名所，漲潮最美'},{name:'糸島牡蠣小屋',time:'12:30',map:'Itoshima oyster hut Fukuoka',note:'新鮮牡蠣¥500/個'}],
+      []),
+    mkD(4,'2025-07-30','門司港','門司港懷舊區','明治洋式建築，烤咖哩午餐','相鐵Fresa Inn博多駅前','電車',
+      [{name:'博多→門司港',time:'09:00',map:'Mojiko Station Kitakyushu',note:'新幹線到小倉再換車約55分'},{name:'門司港レトロ地区',time:'10:30',map:'Mojiko Retro District Kitakyushu',note:'必拍舊車站'},{name:'焼きカレー 名店',time:'12:30',map:'Yakicurry Mojiko Kitakyushu',note:'門司港名物烤咖哩'}],
+      [{type:'交通',name:'JR 博多→門司港 票券',url:'#',desc:'',img:''}]),
+    mkD(5,'2025-07-31','福岡','天神・中洲 & 回家','最後血拼，屋台晚餐','—','電車,飛機',
+      [{name:'天神地下街',time:'10:00',map:'Tenjin Underground Shopping Fukuoka',note:'最後採購伴手禮'},{name:'中洲屋台',time:'17:30',map:'Nakasu Yatai Stalls Fukuoka',note:'必點豚骨拉麵'},{name:'福岡機場 出發',time:'21:00',map:'Fukuoka Airport International Terminal',note:'提早3小時辦理登機'}],
+      [{type:'機票',name:'台灣虎航 IT235 福岡→高雄',url:'#',desc:'21:00出發',img:''}]),
+  ];
+}
 
-    const c = document.getElementById("content");
-    let day = days[current];
-    const transList = ["電車", "巴士", "計程車", "步行", "飛機"];
+function mkD(o, date, city, dest, itin, hotel, transport, stops, creds) {
+  return { id:o, day:`第${o}天`, date, city, dest, itin, hotel, transport, note:'',
+    stops: JSON.stringify(stops), creds: JSON.stringify(creds), sort_order: o };
+}
 
-    c.innerHTML = `
-        <div class="space-y-6">
-            <div class="bg-slate-50 p-6 rounded-[32px] space-y-4 border border-slate-100">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-[9px] font-black text-slate-400 uppercase">Location</label>
-                        <input class="w-full bg-transparent font-bold text-slate-700" value="${day.city||''}" placeholder="地區 (如: 天神)" onchange="update('city',this.value)">
-                    </div>
-                    <div>
-                        <label class="text-[9px] font-black text-slate-400 uppercase">Focus</label>
-                        <input class="w-full bg-transparent font-bold text-slate-700" value="${day.destination||''}" placeholder="主要標題" onchange="update('destination',this.value)">
-                    </div>
-                </div>
-                <div>
-                    <label class="text-[9px] font-black text-slate-400 uppercase">Stay 🏨</label>
-                    <input class="w-full bg-transparent font-bold text-slate-700" value="${day.accommodation||''}" placeholder="住宿飯店名稱" onchange="update('accommodation',this.value)">
-                </div>
-            </div>
+async function seedFukuoka() {
+  localSeed();
+  for (const d of days) {
+    const { id, ...r } = d;
+    await db.from('trips').insert(r).catch(()=>{});
+  }
+  const { data } = await db.from('trips').select('*').order('sort_order');
+  if (data?.length) days = data;
+}
 
-            <div>
-                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Transport Options</label>
-                <div class="flex flex-wrap gap-2">
-                    ${transList.map(t => `
-                        <div class="trans-tag ${day.transport_tags?.includes(t)?'selected':''}" onclick="toggleTrans('${t}')">${t}</div>
-                    `).join('')}
-                    <input class="flex-1 min-w-[100px] border-none bg-slate-50 rounded-xl px-3 py-1.5 text-[10px] font-bold" value="${day.transport_custom||''}" placeholder="其他方式..." onchange="update('transport_custom',this.value)">
-                </div>
-            </div>
+// ─── REALTIME ─────────────────────────────────────────────
+function doSubscribe() {
+  db.channel('trips-ch')
+    .on('postgres_changes', { event:'*', schema:'public', table:'trips' }, async () => {
+      const { data } = await db.from('trips').select('*').order('sort_order');
+      if (data) { days = data; renderAll(); toast('🔄 行程已同步更新'); }
+    })
+    .subscribe(s => setLive(s === 'SUBSCRIBED'));
+}
 
-            <div>
-                <div class="flex justify-between items-center mb-4">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Schedule</label>
-                    <button onclick="addStop()" class="text-blue-600 text-[10px] font-black bg-blue-50 px-3 py-1.5 rounded-full">+ 新增景點</button>
-                </div>
-                <div id="list">
-                    ${(day.stops || []).map((s,i) => `
-                        <div class="stop-card">
-                            <div class="drag-handle"><i class="fa-solid fa-ellipsis-vertical"></i></div>
-                            <div class="flex-1 space-y-2">
-                                <div class="flex gap-2">
-                                    <input class="w-16 bg-slate-50 text-[10px] font-black p-2 rounded-lg" value="${s.time||''}" placeholder="09:00" onchange="updateStop(${i},'time',this.value)">
-                                    <input class="flex-1 bg-slate-50 text-sm font-bold p-2 rounded-lg" value="${s.name||''}" placeholder="景點或餐廳名稱" onchange="updateStop(${i},'name',this.value)">
-                                </div>
-                            </div>
-                            <button onclick="removeStop(${i})" class="text-slate-200 hover:text-red-400 transition-colors"><i class="fa-solid fa-circle-minus"></i></button>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
+// ─── RENDER ───────────────────────────────────────────────
+function renderAll() {
+  if (!currentId && days.length) currentId = days[0].id;
+  renderTabs();
+  renderContent();
+}
 
-            <div class="pt-6 border-t border-dashed border-slate-200">
-                <div class="flex justify-between items-center mb-4">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vouchers & Links</label>
-                    <button onclick="addVoucher()" class="text-purple-600 text-[10px] font-black bg-purple-50 px-3 py-1.5 rounded-full">+ 新增憑證</button>
-                </div>
-                <div class="space-y-2">
-                    ${(day.vouchers || []).map((v,i) => `
-                        <div class="flex gap-2 items-center bg-slate-50 p-2 rounded-xl">
-                            <input class="w-24 bg-white text-[10px] font-bold p-2 rounded-lg" value="${v.title||''}" placeholder="如: 飯店確認" onchange="updateVoucher(${i},'title',this.value)">
-                            <input class="flex-1 bg-white text-[10px] text-blue-500 p-2 rounded-lg" value="${v.url||''}" placeholder="http://..." onchange="updateVoucher(${i},'url',this.value)">
-                            ${v.url ? `<a href="${v.url}" target="_blank" class="text-slate-400 p-1"><i class="fa-solid fa-link text-xs"></i></a>` : ''}
-                            <button onclick="removeVoucher(${i})" class="text-slate-200"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
+function renderTabs() {
+  document.getElementById('tabs').innerHTML = days.map(d => {
+    const dt = d.date ? new Date(d.date + 'T00:00:00') : null;
+    const mon = dt ? `${dt.getMonth()+1}/${dt.getDate()}` : d.day;
+    const dn = dt ? String(dt.getDate()).padStart(2,'0') : d.day.replace(/[^\d]/g,'');
+    const wd = dt ? `(${WD[dt.getDay()]})` : '';
+    return `<div class="date-tab ${d.id===currentId?'active':''}" onclick="selDay(${d.id})">
+      <span class="dt-mon">${mon}</span>
+      <span class="dt-day">${dn}</span>
+      <span class="dt-wd">${wd}</span>
+      <span class="dt-badge">${d.city||''}</span>
+    </div>`;
+  }).join('');
+}
 
-            <button onclick="deleteDay()" class="w-full py-10 text-slate-300 text-[10px] font-bold hover:text-red-400 transition-all uppercase tracking-widest">Remove This Day</button>
+function selDay(id) { currentId = id; mapDayId = null; mapQ = null; renderAll(); }
+
+function renderContent() {
+  const d = days.find(x => x.id === currentId);
+  if (!d) { document.getElementById('content').innerHTML = '<div style="text-align:center;padding:48px 20px;color:#bbb;font-size:.85rem;">暫無行程，請點擊「＋ 新增行程」</div>'; return; }
+  const stops = pj(d.stops), creds = pj(d.creds);
+  const trans = (d.transport||'').split(',').filter(Boolean);
+  const dt = d.date ? new Date(d.date+'T00:00:00') : null;
+  const wd = dt ? WD[dt.getDay()] : '';
+  const mapsUrl = stops.length ? 'https://www.google.com/maps/dir/'+stops.map(s=>encodeURIComponent(s.map||s.name)).join('/') : 'https://maps.google.com';
+
+  document.getElementById('content').innerHTML = `
+  <div class="day-card">
+    <div class="day-card-header">
+      <div class="title-row">
+        <span class="day-title">${d.day}${wd?`(${wd})`:''}</span>
+        <span class="city-tag ${d.city==='京都'?'green':d.city==='福岡'?'blue':''}">${d.city||''}</span>
+        <button class="ibt" onclick="openDaySheet(${d.id})" title="編輯">✏️</button>
+        <button class="ibt red" onclick="delDay(${d.id})" title="刪除">🗑</button>
+      </div>
+      <div class="info-row">
+        <span class="lbl">目的地</span>
+        <span class="val">${d.dest||'—'}${d.dest?` <span class="pin" onclick="showMap('${enc(d.dest+' '+d.city)}','${d.dest}',${d.id})">📍</span>`:''}
+        </span>
+      </div>
+      <div class="info-row">
+        <span class="lbl">行程</span>
+        <span class="val">${d.itin||'—'}</span>
+      </div>
+      <div class="info-row">
+        <span class="lbl">住宿</span>
+        <span class="val">${d.hotel||'—'}${d.hotel?` <span class="pin" onclick="showMap('${enc(d.hotel)}','${d.hotel}',${d.id})">📍</span>`:''}
+        </span>
+      </div>
+      <div class="info-row">
+        <span class="lbl">交通</span>
+        <div class="val">
+          <div class="chips">
+            ${Object.keys(TICONS).map(t=>`<span class="chip ${trans.includes(t)?'on':''}" onclick="togT(${d.id},'${t}')">${TICONS[t]} ${t}</span>`).join('')}
+          </div>
         </div>
-    `;
+      </div>
+    </div>
 
-    // 拖曳功能
-    new Sortable(document.getElementById("list"), {
-        handle: '.drag-handle',
-        animation: 150,
-        onEnd: (e) => {
-            const moved = day.stops.splice(e.oldIndex, 1)[0];
-            day.stops.splice(e.newIndex, 0, moved);
-            save(); 
-        }
-    });
+    <div class="map-bar">
+      <span>📍 當日行程地點</span>
+      <a class="gmap-btn" href="${mapsUrl}" target="_blank">Google Maps 路線 ↗</a>
+    </div>
+
+    ${mapDayId===d.id && mapQ ? `<div class="inline-map"><iframe src="https://maps.google.com/maps?q=${mapQ}&output=embed&z=15" allowfullscreen></iframe></div>` : ''}
+
+    <div class="stops">
+      ${stops.map((s,i)=>`
+      <div class="stop-row" onclick="showMap('${enc(s.map||s.name)}','${s.name}',${d.id})">
+        <div class="snum">${i+1}</div>
+        <span class="stime">${s.time||''}</span>
+        <span class="sname">${s.name}</span>
+        <button class="sdel" onclick="event.stopPropagation();delStop(${d.id},${i})" title="刪除">✕</button>
+      </div>`).join('')}
+      <button class="add-stop" onclick="openStopSheet(null,${d.id})">＋ 新增地點</button>
+    </div>
+
+    <div class="creds-sec">
+      <div class="creds-lbl">憑證</div>
+      ${creds.map((c,i)=>`
+      <a class="cred-row" href="${c.url||'#'}" ${c.url?'target="_blank"':''}>
+        <span class="cred-ico">${CICO[c.type]||'🔗'}</span>
+        <div class="cred-info">
+          <div class="cred-name">${c.name}</div>
+          <div class="cred-sub">${c.type}${c.desc?' · '+c.desc:''}</div>
+        </div>
+        ${c.img?`<img class="cred-thumb" src="${c.img}" onerror="this.style.display='none'">` : ''}
+        <button class="cred-del" onclick="event.preventDefault();event.stopPropagation();delCred(${d.id},${i})">✕</button>
+      </a>`).join('')}
+      <button class="add-cred" onclick="openCredSheet(${d.id})">＋ 新增憑證</button>
+    </div>
+  </div>`;
 }
 
-// --- 邏輯函數 ---
-function selectDay(i) { current = i; render(); }
-function update(k, v) { days[current][k] = v; }
-
-function toggleTrans(tag) {
-    if(!days[current].transport_tags) days[current].transport_tags = [];
-    let tags = days[current].transport_tags;
-    if(tags.includes(tag)) tags = tags.filter(t => t !== tag);
-    else tags.push(tag);
-    days[current].transport_tags = tags;
-    render();
+// ─── MAP ──────────────────────────────────────────────────
+function showMap(q, label, dayId) {
+  if (mapDayId===dayId && mapQ===q) { mapDayId=null; mapQ=null; }
+  else { mapDayId=dayId; mapQ=q; }
+  renderContent();
 }
 
-function addStop() { if(!days[current].stops) days[current].stops=[]; days[current].stops.push({time:"", name:""}); render(); }
-function updateStop(i, k, v) { days[current].stops[i][k] = v; }
-function removeStop(i) { days[current].stops.splice(i, 1); render(); }
-
-function addVoucher() { if(!days[current].vouchers) days[current].vouchers=[]; days[current].vouchers.push({title:"", url:""}); render(); }
-function updateVoucher(i, k, v) { days[current].vouchers[i][k] = v; }
-function removeVoucher(i) { days[current].vouchers.splice(i, 1); render(); }
-
-async function addDay() {
-    const newDay = { trip_id: tripId, day_num: days.length + 1, stops: [], vouchers: [], transport_tags: [], sort_order: days.length };
-    days.push(newDay);
-    current = days.length - 1;
-    await save(); render();
+// ─── TRANSPORT TOGGLE ─────────────────────────────────────
+async function togT(dayId, t) {
+  const d = days.find(x=>x.id===dayId); if (!d) return;
+  let arr = (d.transport||'').split(',').filter(Boolean);
+  arr = arr.includes(t) ? arr.filter(x=>x!==t) : [...arr, t];
+  await upDay(dayId, { transport: arr.join(',') });
 }
 
-async function deleteDay() {
-    if(!confirm("確定要刪除？")) return;
-    if(days[current].id) await _db.from("trips").delete().eq("id", days[current].id);
-    days.splice(current, 1);
-    current = 0;
-    load();
+// ─── DAY CRUD ─────────────────────────────────────────────
+function openDaySheet(id) {
+  const d = id ? days.find(x=>x.id===id) : null;
+  document.getElementById('dEid').value = id||'';
+  document.getElementById('dDt').value = d?.date||'';
+  document.getElementById('dCi').value = d?.city||'';
+  document.getElementById('dDs').value = d?.dest||'';
+  document.getElementById('dIt').value = d?.itin||'';
+  document.getElementById('dHt').value = d?.hotel||'';
+  const av = (d?.transport||'').split(',');
+  document.querySelectorAll('#tChips .fchip').forEach(c => c.classList.toggle('sel', av.includes(c.dataset.v)));
+  document.getElementById('dayOv').classList.add('open');
 }
 
-async function save() {
-    for(let d of days) {
-        const { id, ...payload } = d;
-        if(!id) await _db.from("trips").insert(payload);
-        else await _db.from("trips").upsert(d);
+async function saveDay() {
+  const id = document.getElementById('dEid').value;
+  const transport = Array.from(document.querySelectorAll('#tChips .fchip.sel')).map(c=>c.dataset.v).join(',');
+  const p = {
+    date: document.getElementById('dDt').value,
+    city: document.getElementById('dCi').value.trim(),
+    dest: document.getElementById('dDs').value.trim(),
+    itin: document.getElementById('dIt').value.trim(),
+    hotel: document.getElementById('dHt').value.trim(),
+    transport,
+  };
+  if (id) {
+    await upDay(parseInt(id), p);
+  } else {
+    const o = days.length+1;
+    const nd = {...p, day:`第${o}天`, note:'', stops:'[]', creds:'[]', sort_order:o};
+    try {
+      const { data, error } = await db.from('trips').insert(nd).select().single();
+      if (error) throw error;
+      days.push(data); currentId = data.id;
+    } catch(e) {
+      days.push({...nd, id:Date.now()}); currentId = days[days.length-1].id;
     }
-    console.log("Saved!");
+    renderAll();
+  }
+  closeOv('dayOv'); toast('✅ 行程已儲存');
 }
 
-load();
+async function delDay(id) {
+  if (!confirm('確定刪除這天？')) return;
+  try { await db.from('trips').delete().eq('id',id); } catch(e) {}
+  days = days.filter(x=>x.id!==id);
+  if (currentId===id) currentId = days[0]?.id||null;
+  renderAll(); toast('🗑 已刪除');
+}
+
+async function upDay(id, u) {
+  try { await db.from('trips').update(u).eq('id',id); } catch(e) {}
+  const d = days.find(x=>x.id===id); if (d) Object.assign(d, u);
+  renderContent();
+}
+
+// ─── STOP CRUD ────────────────────────────────────────────
+function openStopSheet(idx, dayId) {
+  eStopIdx = idx; eStopDayId = dayId||currentId;
+  const d = days.find(x=>x.id===eStopDayId);
+  const stops = d ? pj(d.stops) : [];
+  const s = idx!==null ? stops[idx] : null;
+  document.getElementById('stopTitle').textContent = idx!==null?'編輯地點':'新增地點';
+  document.getElementById('sN').value = s?.name||'';
+  document.getElementById('sT').value = s?.time||'09:00';
+  document.getElementById('sM').value = s?.map||'';
+  document.getElementById('sNt').value = s?.note||'';
+  const sel = document.getElementById('sD');
+  sel.innerHTML = days.map(d2=>`<option value="${d2.id}" ${d2.id===eStopDayId?'selected':''}>${d2.day} · ${d2.city}</option>`).join('');
+  document.getElementById('stopOv').classList.add('open');
+}
+
+async function saveStop() {
+  const name = document.getElementById('sN').value.trim();
+  if (!name) { toast('請輸入地點名稱'); return; }
+  const dayId = parseInt(document.getElementById('sD').value);
+  const d = days.find(x=>x.id===dayId); if (!d) return;
+  const stops = pj(d.stops);
+  const s = { name, time:document.getElementById('sT').value, map:document.getElementById('sM').value.trim(), note:document.getElementById('sNt').value.trim() };
+  if (eStopIdx!==null) stops[eStopIdx] = s; else stops.push(s);
+  stops.sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  await upDay(dayId, { stops: JSON.stringify(stops) });
+  closeOv('stopOv'); toast('✅ 地點已儲存');
+}
+
+async function delStop(dayId, idx) {
+  const d = days.find(x=>x.id===dayId); if (!d) return;
+  const stops = pj(d.stops); stops.splice(idx,1);
+  await upDay(dayId, { stops: JSON.stringify(stops) }); toast('🗑 地點已刪除');
+}
+
+// ─── CRED CRUD ────────────────────────────────────────────
+function openCredSheet(dayId, idx) {
+  eCredDayId = dayId; eCredIdx = idx!==undefined?idx:null;
+  const d = days.find(x=>x.id===dayId);
+  const creds = d ? pj(d.creds) : [];
+  const c = eCredIdx!==null ? creds[eCredIdx] : null;
+  document.getElementById('credTitle').textContent = c?'編輯憑證':'新增憑證';
+  document.getElementById('cN').value = c?.name||'';
+  document.getElementById('cU').value = c?.url||'';
+  document.getElementById('cDs').value = c?.desc||'';
+  document.getElementById('cI').value = c?.img||'';
+  const prev = document.getElementById('credPrev');
+  prev.src = c?.img||''; prev.style.display = c?.img?'block':'none';
+  document.querySelectorAll('.ctype').forEach(el => el.classList.toggle('sel', el.dataset.t===(c?.type||'訂房')));
+  document.getElementById('credOv').classList.add('open');
+}
+
+function pickCT(el) { document.querySelectorAll('.ctype').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); }
+
+async function saveCred() {
+  const name = document.getElementById('cN').value.trim();
+  if (!name) { toast('請輸入憑證名稱'); return; }
+  const typeEl = document.querySelector('.ctype.sel');
+  const c = { name, type:typeEl?.dataset.t||'其他', url:document.getElementById('cU').value.trim(), desc:document.getElementById('cDs').value.trim(), img:document.getElementById('cI').value.trim() };
+  const d = days.find(x=>x.id===eCredDayId); if (!d) return;
+  const creds = pj(d.creds);
+  if (eCredIdx!==null) creds[eCredIdx]=c; else creds.push(c);
+  await upDay(eCredDayId, { creds: JSON.stringify(creds) });
+  closeOv('credOv'); toast('✅ 憑證已儲存');
+}
+
+async function delCred(dayId, idx) {
+  const d = days.find(x=>x.id===dayId); if (!d) return;
+  const creds = pj(d.creds); creds.splice(idx,1);
+  await upDay(dayId, { creds: JSON.stringify(creds) }); toast('🗑 憑證已刪除');
+}
+
+function imgUp(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => { document.getElementById('cI').value=ev.target.result; prevImg(ev.target.result); };
+  r.readAsDataURL(f);
+}
+function prevImg(src) { const i=document.getElementById('credPrev'); i.src=src; i.style.display=src?'block':'none'; }
+
+// ─── UTILS ────────────────────────────────────────────────
+function pj(v) { if (Array.isArray(v)) return v; try { return JSON.parse(v)||[]; } catch { return []; } }
+function enc(s) { return encodeURIComponent(s); }
+function tgl(el) { el.classList.toggle('sel'); }
+function closeOv(id) { document.getElementById(id).classList.remove('open'); }
+function toast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+['stopOv','credOv','dayOv'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => { if(e.target===e.currentTarget) closeOv(id); });
+});
+
+init();
 </script>
 
 </body>
