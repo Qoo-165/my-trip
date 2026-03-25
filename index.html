@@ -1,23 +1,168 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>個人筆記本</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>豪華旅遊行程規劃 ✈️</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .timeline-line::before { content: ''; position: absolute; left: 20px; top: 0; bottom: 0; width: 2px; background: #e2e8f0; }
+        .tab-active { background: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen pb-24">
+
+    <div id="auth-overlay" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-6">
+        <h1 class="text-2xl font-bold mb-6">請輸入旅伴密碼</h1>
+        <input type="password" id="site-pass" class="border p-3 rounded-lg w-full max-w-xs text-center mb-4" placeholder="密碼...">
+        <button onclick="checkSitePass()" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold">進入規劃</button>
+    </div>
+
+    <div class="max-w-xl mx-auto px-4 py-8">
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 id="trip-title" class="text-3xl font-extrabold text-slate-800">我們的冒險之旅</h1>
+                <p class="text-slate-500">即時同步行程表</p>
+            </div>
+            <button onclick="logout()" class="text-slate-400 text-sm underline">鎖定</button>
+        </header>
+
+        <div id="day-tabs" class="flex overflow-x-auto gap-2 mb-8 no-scrollbar pb-2"></div>
+
+        <div class="relative timeline-line space-y-8" id="itin-list">
+            </div>
+
+        <div class="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-xl px-4">
+            <button onclick="showAddModal()" class="w-full bg-blue-600 text-white py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition-all font-bold text-lg">
+                <i class="fa-solid fa-location-dot mr-2"></i> 新增景點 / 活動
+            </button>
+        </div>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-black/50 hidden z-40 p-4 flex items-center justify-center">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6">
+            <h3 class="text-xl font-bold mb-4">新增行程</h3>
+            <div class="space-y-4">
+                <input type="text" id="in-time" class="w-full border p-3 rounded-lg" placeholder="時間 (如：10:30)">
+                <input type="text" id="in-title" class="w-full border p-3 rounded-lg" placeholder="景點名稱">
+                <input type="text" id="in-hotel" class="w-full border p-3 rounded-lg" placeholder="備註/交通/訂房資訊">
+                <input type="text" id="in-link" class="w-full border p-3 rounded-lg" placeholder="Google Map 連結">
+                <div class="flex gap-2">
+                    <button onclick="hideModal()" class="flex-1 py-3 bg-slate-100 rounded-lg">取消</button>
+                    <button onclick="saveItem()" class="flex-1 py-3 bg-blue-600 text-white rounded-lg">儲存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const PASS = '1109'; // 你的密碼
-        function auth() {
-            const input = prompt('請輸入密碼：');
-            if (input === PASS) {
-                document.body.style.display = 'block';
-            } else {
-                alert('錯誤');
-                location.reload();
+        // ⚠️ 請填入你的 Supabase 資訊
+        const SB_URL =  'https://mklbhyinzgruetajxkvq.supabase.co'; 
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rbGJoeWluemdydWV0YWp4a3ZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NDMyNzksImV4cCI6MjA5MDAxOTI3OX0.XlQDwt4thOB7NH09f_fUkgHeMx-kR_Kw-SFQgPRR8V0';
+        const SITE_PASSWORD = '1109'; 
+        const TOTAL_DAYS = 5;
+
+        const _supabase = supabase.createClient(SB_URL, SB_KEY);
+        let currentDay = 1;
+
+        // 1. 驗證與初始化
+        function checkSitePass() {
+            if (document.getElementById('site-pass').value === SITE_PASSWORD) {
+                document.getElementById('auth-overlay').classList.add('hidden');
+                initTabs();
+                loadData();
+                subscribe();
+            } else { alert('密碼錯囉！'); }
+        }
+
+        function initTabs() {
+            const container = document.getElementById('day-tabs');
+            for (let i = 1; i <= TOTAL_DAYS; i++) {
+                const btn = document.createElement('button');
+                btn.className = `flex-none px-6 py-2 rounded-full border border-slate-200 bg-white font-medium transition-all ${i === 1 ? 'tab-active' : ''}`;
+                btn.id = `tab-${i}`;
+                btn.innerText = `Day ${i}`;
+                btn.onclick = () => switchDay(i);
+                container.appendChild(btn);
             }
         }
+
+        function switchDay(day) {
+            currentDay = day;
+            document.querySelectorAll('#day-tabs button').forEach(b => b.classList.remove('tab-active'));
+            document.getElementById(`tab-${day}`).classList.add('tab-active');
+            loadData();
+        }
+
+        // 2. 資料操作
+        async function loadData() {
+            const { data, error } = await _supabase
+                .from('trips')
+                .select('*')
+                .eq('day', `Day ${currentDay}`)
+                .order('sort_order', { ascending: true });
+            
+            render(data || []);
+        }
+
+        async function saveItem() {
+            const newItem = {
+                day: `Day ${currentDay}`,
+                date: document.getElementById('in-time').value, // 暫用 date 存時間
+                city_text: document.getElementById('in-title').value,
+                hotel: document.getElementById('in-hotel').value,
+                itin: document.getElementById('in-link').value,
+                sort_order: Date.now()
+            };
+            await _supabase.from('trips').insert([newItem]);
+            hideModal();
+            loadData();
+        }
+
+        async function deleteItem(id) {
+            if (confirm('確定要刪除嗎？')) {
+                await _supabase.from('trips').delete().eq('id', id);
+                loadData();
+            }
+        }
+
+        // 3. 即時訂閱功能 (多人編輯核心)
+        function subscribe() {
+            _supabase.channel('custom-all-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, () => {
+                loadData();
+            }).subscribe();
+        }
+
+        // 4. UI 渲染
+        function render(items) {
+            const list = document.getElementById('itin-list');
+            list.innerHTML = items.length === 0 ? '<p class="pl-12 text-slate-400">尚無行程，點擊下方按鈕新增</p>' : '';
+            items.forEach(item => {
+                const hasLink = item.itin && item.itin.includes('http');
+                const div = document.createElement('div');
+                div.className = "relative pl-12 group animate-fadeIn";
+                div.innerHTML = `
+                    <div class="absolute left-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center border-4 border-white z-10 shadow-sm">
+                        <i class="fa-solid fa-clock text-blue-600 text-xs"></i>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative group">
+                        <button onclick="deleteItem(${item.id})" class="absolute top-4 right-4 text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"><i class="fa-solid fa-trash"></i></button>
+                        <span class="text-xs font-bold text-blue-500 uppercase tracking-wider">${item.date || '未定時'}</span>
+                        <h3 class="text-lg font-bold text-slate-800 mt-1">${item.city_text || '未命名地點'}</h3>
+                        <p class="text-slate-500 text-sm mt-2 mb-4">${item.hotel || '無備註'}</p>
+                        ${hasLink ? `<a href="${item.itin}" target="_blank" class="inline-flex items-center text-xs font-bold bg-blue-50 text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-100 transition-all">在 Google Maps 查看 <i class="fa-solid fa-arrow-up-right-from-square ml-2"></i></a>` : ''}
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function showAddModal() { document.getElementById('modal').classList.remove('hidden'); }
+        function hideModal() { document.getElementById('modal').classList.add('hidden'); }
+        function logout() { location.reload(); }
     </script>
-</head>
-<body style="display:none;" onload="auth()">
-    <h1>驗證成功！網頁正常運作中</h1>
-    <p>如果你看到這個畫面，代表你的網頁已經成功上線了。</p>
 </body>
 </html>
