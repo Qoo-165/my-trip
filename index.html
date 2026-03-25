@@ -8,94 +8,95 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .active-day { background: #fef3c7; border-color: #f59e0b; color: #b45309; }
-        .transport-badge { @apply flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-medium bg-white; }
-        .poi-item { @apply flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl mb-2; }
-        .voucher-card { @apply p-3 bg-slate-50 border border-dashed border-slate-300 rounded-xl text-sm flex items-center gap-2; }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8f9fa; }
+        .active-day { background: #fffcf0; border: 2px solid #f59e0b !important; color: #b45309; transform: scale(1.05); }
+        .transport-badge { @apply flex items-center gap-1 px-3 py-1 rounded-full border border-slate-200 text-[11px] font-bold bg-white text-slate-600; }
+        .poi-card { @apply flex items-center gap-4 p-3 bg-[#f8f9fa] rounded-xl mb-2 border border-slate-100; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="bg-[#f8f9fa] min-h-screen pb-24">
+<body class="pb-32">
 
-    <header class="bg-white px-4 py-4 flex justify-between items-center sticky top-0 z-30 shadow-sm">
+    <header class="bg-white px-5 py-4 flex justify-between items-center sticky top-0 z-40 shadow-sm">
         <div class="flex items-center gap-2">
-            <span class="text-xl">✈️</span>
-            <h1 class="font-bold text-slate-700">福岡吃貨團之旅 🍜</h1>
+            <span class="text-2xl">✈️</span>
+            <div>
+                <h1 class="text-lg font-black text-slate-800 leading-none">福岡吃貨團之旅</h1>
+                <span class="text-[10px] text-green-500 font-bold">● 已連線同步</span>
+            </div>
         </div>
-        <div class="flex items-center gap-2">
-            <span class="text-[10px] text-green-500">● 已連線</span>
-            <button onclick="showAddModal()" class="bg-slate-800 text-white text-xs px-3 py-2 rounded-lg font-bold">+ 新增行程</button>
-        </div>
+        <button onclick="showAddModal()" class="bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl font-black shadow-lg active:scale-95 transition-all">+ 新增行程</button>
     </header>
 
-    <div class="bg-white border-b overflow-x-auto flex px-4 py-3 gap-3 no-scrollbar sticky top-[60px] z-20" id="date-nav">
-        </div>
+    <div class="bg-white border-b overflow-x-auto flex px-5 py-4 gap-4 no-scrollbar sticky top-[68px] z-30" id="date-nav"></div>
 
-    <main class="p-4 space-y-6" id="main-content">
-        </main>
+    <main class="p-5" id="main-content">
+        <div class="text-center py-20 text-slate-300">正在開啟美食地圖...</div>
+    </main>
 
-    <div class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent pointer-events-none">
-        <div class="max-w-md mx-auto pointer-events-auto flex justify-around">
-            </div>
-    </div>
-
-    <div id="modal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-end sm:items-center justify-center">
-        <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[85vh]">
+    <div id="modal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-end sm:items-center justify-center backdrop-blur-sm">
+        <div class="bg-white w-full max-w-lg rounded-t-[40px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold">編輯行程細節</h3>
-                <button onclick="hideModal()" class="text-slate-400 p-2"><i class="fa-solid fa-xmark text-xl"></i></button>
+                <h3 class="text-2xl font-black">編輯本日行程</h3>
+                <button onclick="hideModal()" class="text-slate-300 p-2"><i class="fa-solid fa-circle-xmark text-2xl"></i></button>
             </div>
-            <div class="space-y-4 text-sm">
-                <div>
-                    <label class="block font-bold text-slate-500 mb-1">目的地</label>
-                    <input type="text" id="in-dest" placeholder="例如：博多運河城" class="w-full border p-3 rounded-xl outline-none focus:ring-2 ring-blue-500">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block font-bold text-slate-500 mb-1">地區標籤</label>
-                        <input type="text" id="in-city" placeholder="福岡" class="w-full border p-3 rounded-xl outline-none">
+            <div class="space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-xs font-black text-slate-400 ml-1">地區 (如: 博多)</label>
+                        <input type="text" id="in-city" class="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none focus:ring-2 ring-orange-200">
                     </div>
-                    <div>
-                        <label class="block font-bold text-slate-500 mb-1">住宿飯店</label>
-                        <input type="text" id="in-hotel" placeholder="飯店名稱" class="w-full border p-3 rounded-xl outline-none">
+                    <div class="space-y-1">
+                        <label class="text-xs font-black text-slate-400 ml-1">目的地標題</label>
+                        <input type="text" id="in-dest" class="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none focus:ring-2 ring-orange-200">
                     </div>
                 </div>
-                <div>
-                    <label class="block font-bold text-slate-500 mb-1">交通工具 (用逗號隔開)</label>
-                    <input type="text" id="in-trans" placeholder="地鐵, 步行, 巴士" class="w-full border p-3 rounded-xl outline-none">
+                <div class="space-y-1">
+                    <label class="text-xs font-black text-slate-400 ml-1">住宿飯店</label>
+                    <input type="text" id="in-hotel" class="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none">
                 </div>
-                <button onclick="saveItem()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-lg mt-4">儲存並更新</button>
+                <div class="space-y-1">
+                    <label class="text-xs font-black text-slate-400 ml-1">Google Maps 路線連結</label>
+                    <input type="text" id="in-map" class="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none" placeholder="貼上 Google Maps 分享連結">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-black text-slate-400 ml-1">景點清單 (格式: 時間,景點 | 時間,景點)</label>
+                    <textarea id="in-pois" rows="3" class="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none" placeholder="09:00,機場 | 12:00,博多拉麵"></textarea>
+                </div>
+                <button onclick="saveItem()" class="w-full bg-orange-500 text-white py-5 rounded-3xl font-black text-lg shadow-xl shadow-orange-100 active:scale-95 transition-all">儲存本日行程</button>
             </div>
         </div>
     </div>
 
     <script>
-        // ======= ⚙️ 你的 Supabase 設定區 =======
+        // ======= ⚙️ 設定區 =======
         const SB_URL = 'https://mklbhyinzgruetajxkvq.supabase.co'; 
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rbGJoeWluemdydWV0YWp4a3ZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NDMyNzksImV4cCI6MjA5MDAxOTI3OX0.XlQDwt4thOB7NH09f_fUkgHeMx-kR_Kw-SFQgPRR8V0'; // 請填入你的 Anon Key
-        const TOTAL_DAYS = 5;
-        // =====================================
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rbGJoeWluemdydWV0YWp4a3ZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NDMyNzksImV4cCI6MjA5MDAxOTI3OX0.XlQDwt4thOB7NH09f_fUkgHeMx-kR_Kw-SFQgPRR8V0'; // 👈 請在此貼上你的 Anon Key
+        const TOTAL_DAYS = 5; 
+        const START_DATE = '2026-07-27'; // 👈 設定你的出發日期
+        // ========================
 
         const _supabase = supabase.createClient(SB_URL, SB_KEY);
         let currentDay = 1;
 
-        // 初始化日期導覽列
         function initDateNav() {
             const nav = document.getElementById('date-nav');
+            nav.innerHTML = '';
+            const startDate = new Date(START_DATE);
             for(let i=1; i<=TOTAL_DAYS; i++) {
+                const cur = new Date(startDate);
+                cur.setDate(startDate.getDate() + (i-1));
+                const mm = (cur.getMonth()+1).toString().padStart(2,'0');
+                const dd = cur.getDate().toString().padStart(2,'0');
+                const dayName = ['日','一','二','三','四','五','六'][cur.getDay()];
+                
                 const item = document.createElement('div');
-                item.id = `nav-day-${i}`;
-                item.className = `flex-none flex flex-col items-center justify-center w-14 h-16 border rounded-xl bg-white cursor-pointer transition-all ${i===1 ? 'active-day shadow-sm' : 'text-slate-400 border-slate-100'}`;
-                item.innerHTML = `<span class="text-[10px] font-bold">0${i}</span><span class="text-lg font-black">${i}</span>`;
-                item.onclick = () => switchDay(i);
+                item.className = `flex-none flex flex-col items-center justify-center w-16 h-20 border-2 rounded-2xl bg-white cursor-pointer transition-all ${i===currentDay ? 'active-day' : 'text-slate-300 border-slate-50'}`;
+                item.innerHTML = `<span class="text-[10px] font-bold">${mm}/${dd}</span><span class="text-xl font-black">${dd}</span><span class="text-[10px] font-bold">周${dayName}</span>`;
+                item.onclick = () => { currentDay = i; initDateNav(); loadData(); };
                 nav.appendChild(item);
             }
-        }
-
-        async function switchDay(day) {
-            currentDay = day;
-            document.querySelectorAll('#date-nav > div').forEach(el => el.classList.remove('active-day', 'shadow-sm'));
-            document.getElementById(`nav-day-${day}`).classList.add('active-day', 'shadow-sm');
-            loadData();
         }
 
         async function loadData() {
@@ -106,53 +107,61 @@
         function render(item) {
             const main = document.getElementById('main-content');
             if(!item) {
-                main.innerHTML = `<div class="text-center py-20 text-slate-300">本日尚無詳細規劃，點擊上方按鈕開始。</div>`;
+                main.innerHTML = `<div class="text-center py-20 text-slate-300 font-bold">Day ${currentDay} 尚未規劃行程<br>點擊右上方「+ 新增行程」開始！</div>`;
                 return;
             }
 
-            const transHtml = (item.transportation || "").split(',').map(t => `<div class="transport-badge"><i class="fa-solid fa-person-walking"></i> ${t.trim()}</div>`).join('');
+            // 解析景點清單
+            const pois = (item.poi_list || []).map((p, idx) => `
+                <div class="poi-card shadow-sm">
+                    <span class="bg-slate-800 text-white w-7 h-7 rounded-full text-[11px] flex items-center justify-center font-black">${idx+1}</span>
+                    <div>
+                        <div class="text-[10px] text-orange-500 font-black">${p.time}</div>
+                        <div class="font-black text-slate-700 text-sm">${p.name}</div>
+                    </div>
+                </div>
+            `).join('');
 
             main.innerHTML = `
-                <section class="animate-fadeIn">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-2xl font-black text-slate-800">第 ${item.day_num} 天 <span class="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded ml-2">${item.stay_city || '未定'}</span></h2>
-                        <div class="flex gap-2">
-                            <button onclick="showAddModal()" class="text-slate-400"><i class="fa-solid fa-pen"></i></button>
+                <div class="bg-white rounded-[40px] p-8 shadow-xl border border-slate-50 animate-fadeIn relative overflow-hidden">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h2 class="text-3xl font-black text-slate-800">第 ${currentDay} 天 <span class="text-xs bg-orange-100 text-orange-600 px-3 py-1 rounded-full align-middle ml-2">${item.stay_city || '福岡'}</span></h2>
                         </div>
+                        <i class="fa-solid fa-utensils text-slate-100 text-5xl absolute -right-2 -top-2 rotate-12"></i>
                     </div>
 
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-4 gap-2 text-sm">
-                            <div class="text-slate-400">目的地</div><div class="col-span-3 font-bold text-slate-700">${item.destination || '---'}</div>
-                            <div class="text-slate-400">住宿</div><div class="col-span-3 font-bold text-slate-700">${item.accommodation || '---'}</div>
-                            <div class="text-slate-400">交通</div><div class="col-span-3 flex flex-wrap gap-2">${transHtml}</div>
-                        </div>
-
-                        <div class="pt-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-location-dot text-red-500"></i> 當日行程地點</h3>
-                                <a href="#" class="text-blue-500 text-xs font-bold border border-blue-200 px-3 py-1 rounded-full bg-blue-50">Google Maps 路線 ↗</a>
-                            </div>
-                            <div class="poi-item"><span class="bg-slate-800 text-white w-6 h-6 rounded-full text-[10px] flex items-center justify-center font-bold">1</span> <div><div class="text-[10px] text-slate-400 font-bold">10:00</div><div class="font-bold text-slate-700">${item.destination}</div></div></div>
-                        </div>
-
-                        <div class="pt-6">
-                            <h3 class="font-bold text-slate-800 mb-4">憑證</h3>
-                            <div class="voucher-card"><i class="fa-solid fa-paperclip text-slate-400"></i> 飯店訂房確認單 (IT234...) <i class="fa-solid fa-chevron-right ml-auto text-slate-300"></i></div>
-                        </div>
+                    <div class="space-y-4 mb-8 text-sm">
+                        <div class="flex gap-4"><span class="text-slate-400 font-bold shrink-0 w-12 text-xs">目的地</span><span class="font-black text-slate-700">${item.destination || '未設定'} 📍</span></div>
+                        <div class="flex gap-4"><span class="text-slate-400 font-bold shrink-0 w-12 text-xs">住宿</span><span class="font-black text-slate-700">${item.accommodation || '未設定'} 🏨</span></div>
                     </div>
-                </section>
+
+                    <div class="pt-6 border-t border-dashed border-slate-100">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-black text-slate-800 flex items-center gap-2">📍 當日行程地點</h3>
+                            <a href="${item.google_map_url || '#'}" target="_blank" class="text-blue-600 text-[10px] font-black border-2 border-blue-50 px-4 py-2 rounded-full bg-blue-50 active:bg-blue-600 active:text-white transition-all">Google Maps 路線 ↗</a>
+                        </div>
+                        <div class="space-y-3">${pois || '<p class="text-slate-300 italic text-sm">尚未加入景點</p>'}</div>
+                    </div>
+                </div>
             `;
         }
 
         async function saveItem() {
+            // 解析手打的 POI 文字: "10:00,拉麵 | 12:00,神社" -> [{time:"10:00", name:"拉麵"}, ...]
+            const poiInput = document.getElementById('in-pois').value;
+            const poiArray = poiInput.split('|').filter(s => s.trim()).map(s => {
+                const [t, n] = s.split(',');
+                return { time: t?.trim() || '---', name: n?.trim() || '地點' };
+            });
+
             const newItem = {
                 day_num: currentDay,
                 stay_city: document.getElementById('in-city').value,
                 destination: document.getElementById('in-dest').value,
                 accommodation: document.getElementById('in-hotel').value,
-                transportation: document.getElementById('in-trans').value,
-                sort_order: Date.now()
+                google_map_url: document.getElementById('in-map').value,
+                poi_list: poiArray
             };
             await _supabase.from('trips').upsert([newItem], { onConflict: 'day_num' });
             hideModal();
@@ -161,7 +170,7 @@
 
         function showAddModal() { document.getElementById('modal').classList.remove('hidden'); }
         function hideModal() { document.getElementById('modal').classList.add('hidden'); }
-
+        
         window.onload = () => { initDateNav(); loadData(); };
     </script>
 </body>
