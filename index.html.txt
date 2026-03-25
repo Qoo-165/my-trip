@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多人同步行程規劃助手 (連結版) ✈️</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen pb-20">
+
+    <div class="max-w-3xl mx-auto px-4 py-8">
+        <header class="mb-8 border-b border-slate-200 pb-5">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-800">我們的旅行規劃 🗺️</h1>
+                    <p class="text-slate-500 mt-1 italic text-sm">提示：支援多人編輯，內容即時更新。</p>
+                </div>
+                <div class="text-xs bg-green-100 text-green-700 px-3 py-1.5 rounded-full font-medium" id="sync-status">連線中...</div>
+            </div>
+        </header>
+
+        <nav class="flex space-x-2 mb-6 overflow-x-auto pb-2 scrollbar-hide" id="day-tabs">
+            <button onclick="switchDay(1)" id="tab-1" class="day-tab px-6 py-2 rounded-full bg-blue-600 text-white shadow-md transition-all flex-shrink-0">Day 1</button>
+            <button onclick="switchDay(2)" id="tab-2" class="day-tab px-6 py-2 rounded-full bg-white text-slate-600 hover:bg-slate-100 transition-all flex-shrink-0">Day 2</button>
+            <button onclick="switchDay(3)" id="tab-3" class="day-tab px-6 py-2 rounded-full bg-white text-slate-600 hover:bg-slate-100 transition-all flex-shrink-0">Day 3</button>
+            <button onclick="switchDay(4)" id="tab-4" class="day-tab px-6 py-2 rounded-full bg-white text-slate-600 hover:bg-slate-100 transition-all flex-shrink-0">Day 4</button>
+            <button onclick="switchDay(5)" id="tab-5" class="day-tab px-6 py-2 rounded-full bg-white text-slate-600 hover:bg-slate-100 transition-all flex-shrink-0">Day 5</button>
+        </nav>
+
+        <div id="itinerary-list" class="space-y-4 min-h-[400px]">
+            <div id="loading" class="text-center py-10 text-slate-400 font-light">正在加載雲端資料...</div>
+        </div>
+
+        <div class="mt-8">
+            <button onclick="addItem()" class="w-full py-4 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all flex justify-center items-center gap-2">
+                <i class="fas fa-plus-circle"></i> 新增行程項目
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 1. 初始化資料庫 (Key 建議更換為你們專屬的名稱)
+        const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+        const appKey = 'trip-planner-group-shared-with-links-v1'; // 升級 Key
+        let currentDay = 1;
+
+        function switchDay(day) {
+            currentDay = day;
+            document.querySelectorAll('.day-tab').forEach(btn => {
+                btn.className = "day-tab px-6 py-2 rounded-full bg-white text-slate-600 hover:bg-slate-100 transition-all flex-shrink-0";
+            });
+            document.getElementById(`tab-${day}`).className = "day-tab px-6 py-2 rounded-full bg-blue-600 text-white shadow-md transition-all flex-shrink-0";
+            renderList();
+        }
+
+        function renderList() {
+            const listContainer = document.getElementById('itinerary-list');
+            listContainer.innerHTML = '';
+
+            gun.get(appKey).get(`day${currentDay}`).map().on((data, id) => {
+                if (!data) {
+                    const el = document.getElementById(id);
+                    if (el) el.remove();
+                    return;
+                }
+
+                let itemEl = document.getElementById(id);
+                if (!itemEl) {
+                    itemEl = document.createElement('div');
+                    itemEl.id = id;
+                    itemEl.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-start transition-all animate-fade-in";
+                    listContainer.appendChild(itemEl);
+                }
+
+                // 判斷按鈕樣式
+                const hasLink = data.link && data.link.trim() !== "";
+                const linkBtnClass = hasLink 
+                    ? "bg-blue-100 text-blue-700 hover:bg-blue-200" 
+                    : "bg-slate-100 text-slate-400 cursor-not-allowed";
+                const linkOnClick = hasLink
+                    ? `onclick="window.open('${data.link}', '_blank')"`
+                    : "";
+
+                itemEl.innerHTML = `
+                    <div class="flex-shrink-0">
+                        <input type="time" value="${data.time || '09:00'}" 
+                            onchange="updateItem('${id}', 'time', this.value)"
+                            class="text-sm font-bold text-blue-600 bg-blue-50 border-none rounded-lg px-2 py-2 focus:ring-0">
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center gap-2">
+                            <input type="text" value="${data.activity || ''}" 
+                                oninput="updateItem('${id}', 'activity', this.value)"
+                                placeholder="活動或景點名稱"
+                                class="block flex-1 font-bold text-slate-700 border-none p-0 focus:ring-0 text-lg placeholder:text-slate-300 bg-transparent">
+                            
+                            <button ${linkOnClick} title="${hasLink ? '打開景點連結' : '尚未設定連結'}"
+                                class="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${linkBtnClass}">
+                                <i class="fas fa-external-link-alt text-[10px]"></i> 開啟連結
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-2 mt-3 text-slate-400 border-t border-slate-100 pt-2 mb-2">
+                            <i class="fas fa-location-dot text-xs flex-shrink-0"></i>
+                            <input type="text" value="${data.location || ''}" 
+                                oninput="updateItem('${id}', 'location', this.value)"
+                                placeholder="地標或簡單備註"
+                                class="text-sm border-none p-0 focus:ring-0 w-full bg-transparent placeholder:text-slate-200 text-slate-600">
+                        </div>
+
+                        <div class="flex items-center gap-2 text-slate-400 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100">
+                            <i class="fas fa-link text-xs flex-shrink-0"></i>
+                            <input type="text" value="${data.link || ''}" 
+                                oninput="updateItem('${id}', 'link', this.value)"
+                                placeholder="在此貼上 Google Map 或網址"
+                                class="text-xs border-none p-0 focus:ring-0 w-full bg-transparent placeholder:text-slate-300 text-slate-500 font-mono overflow-ellipsis">
+                        </div>
+                    </div>
+                    <button onclick="deleteItem('${id}')" class="text-slate-200 hover:text-red-400 transition-colors p-1 mt-1 flex-shrink-0">
+                        <i class="fas fa-times-circle text-xl"></i>
+                    </button>
+                `;
+            });
+        }
+
+        function addItem() {
+            const id = 'item_' + Date.now();
+            gun.get(appKey).get(`day${currentDay}`).get(id).put({
+                time: '12:00',
+                activity: '',
+                location: '',
+                link: '', // 預設空連結
+                createdAt: Date.now()
+            });
+        }
+
+        function updateItem(id, field, value) {
+            gun.get(appKey).get(`day${currentDay}`).get(id).get(field).put(value);
+        }
+
+        function deleteItem(id) {
+            if(confirm('確定要刪除這項行程嗎？')) {
+                gun.get(appKey).get(`day${currentDay}`).get(id).put(null);
+            }
+        }
+
+        renderList();
+        setTimeout(() => { document.getElementById('sync-status').innerText = "即時同步中 (Online)"; }, 2000);
+    </script>
+
+    <style>
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        input:focus { outline: none; }
+    </style>
+</body>
+</html>
