@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>✈️ 2025 福岡五日遊</title>
+<title>✈️ 2026 福岡之旅</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -274,7 +274,7 @@ z-index: 50; transition: transform 0.18s;
 
 <div class="topbar">
   <span>✈️</span>
-  <h1>2025 福岡五日遊</h1>
+  <h1>2026 福岡之旅</h1>
   <div class="live-dot-wrap">
     <div class="live-dot" id="liveDot"></div>
     <span id="liveTxt">連線中</span>
@@ -591,31 +591,48 @@ function openDaySheet(id) {
 }
 
 async function saveDay() {
+  const city = document.getElementById('dCi').value.trim();
+  if (!city) { toast('請輸入城市名稱'); return; }
   const id = document.getElementById('dEid').value;
   const transport = Array.from(document.querySelectorAll('#tChips .fchip.sel')).map(c=>c.dataset.v).join(',');
   const p = {
     date: document.getElementById('dDt').value,
-    city: document.getElementById('dCi').value.trim(),
+    city,
     dest: document.getElementById('dDs').value.trim(),
     itin: document.getElementById('dIt').value.trim(),
     hotel: document.getElementById('dHt').value.trim(),
     transport,
   };
   if (id) {
-    await upDay(parseInt(id), p);
-  } else {
-    const o = days.length+1;
-    const nd = {...p, day:`第${o}天`, note:'', stops:'[]', creds:'[]', sort_order:o};
+    // 編輯現有天數
     try {
-      const { data, error } = await db.from('trips').insert(nd).select().single();
+      const { error } = await db.from('trips').update(p).eq('id', parseInt(id));
       if (error) throw error;
-      days.push(data); currentId = data.id;
-    } catch(e) {
-      days.push({...nd, id:Date.now()}); currentId = days[days.length-1].id;
+    } catch(e) { console.warn('update error:', e); }
+    const d = days.find(x=>x.id===parseInt(id));
+    if (d) Object.assign(d, p);
+    closeOv('dayOv'); toast('✅ 行程已儲存'); renderAll();
+  } else {
+    // 新增天數
+    const o = days.length + 1;
+    const nd = { ...p, day:`第${o}天`, note:'', stops:'[]', creds:'[]', sort_order: o };
+    let inserted = null;
+    try {
+      const { data, error } = await db.from('trips').insert(nd).select();
+      if (error) throw error;
+      inserted = Array.isArray(data) ? data[0] : data;
+    } catch(e) { console.warn('insert error:', e); }
+    if (inserted && inserted.id) {
+      days.push(inserted);
+      currentId = inserted.id;
+    } else {
+      // 離線 fallback：用本地暫存
+      const localId = Date.now();
+      days.push({ ...nd, id: localId });
+      currentId = localId;
     }
-    renderAll();
+    closeOv('dayOv'); toast('✅ 行程已新增'); renderAll();
   }
-  closeOv('dayOv'); toast('✅ 行程已儲存');
 }
 
 async function delDay(id) {
@@ -627,8 +644,12 @@ async function delDay(id) {
 }
 
 async function upDay(id, u) {
-  try { await db.from('trips').update(u).eq('id',id); } catch(e) {}
-  const d = days.find(x=>x.id===id); if (d) Object.assign(d, u);
+  try {
+    const { error } = await db.from('trips').update(u).eq('id', id);
+    if (error) console.warn('upDay error:', error);
+  } catch(e) { console.warn('upDay exception:', e); }
+  const d = days.find(x=>x.id===id);
+  if (d) Object.assign(d, u);
   renderContent();
 }
 
@@ -652,19 +673,26 @@ async function saveStop() {
   const name = document.getElementById('sN').value.trim();
   if (!name) { toast('請輸入地點名稱'); return; }
   const dayId = parseInt(document.getElementById('sD').value);
-  const d = days.find(x=>x.id===dayId); if (!d) return;
+  const d = days.find(x=>x.id===dayId);
+  if (!d) { toast('找不到對應天數'); return; }
   const stops = pj(d.stops);
   const s = { name, time:document.getElementById('sT').value, map:document.getElementById('sM').value.trim(), note:document.getElementById('sNt').value.trim() };
   if (eStopIdx!==null) stops[eStopIdx] = s; else stops.push(s);
   stops.sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-  await upDay(dayId, { stops: JSON.stringify(stops) });
-  closeOv('stopOv'); toast('✅ 地點已儲存');
+  d.stops = JSON.stringify(stops);
+  try {
+    const { error } = await db.from('trips').update({ stops: d.stops }).eq('id', dayId);
+    if (error) console.warn('saveStop error:', error);
+  } catch(e) { console.warn('saveStop exception:', e); }
+  closeOv('stopOv'); toast('✅ 地點已儲存'); renderContent();
 }
 
 async function delStop(dayId, idx) {
   const d = days.find(x=>x.id===dayId); if (!d) return;
   const stops = pj(d.stops); stops.splice(idx,1);
-  await upDay(dayId, { stops: JSON.stringify(stops) }); toast('🗑 地點已刪除');
+  d.stops = JSON.stringify(stops);
+  try { await db.from('trips').update({ stops: d.stops }).eq('id', dayId); } catch(e) {}
+  toast('🗑 地點已刪除'); renderContent();
 }
 
 // ─── CRED CRUD ────────────────────────────────────────────
@@ -691,17 +719,24 @@ async function saveCred() {
   if (!name) { toast('請輸入憑證名稱'); return; }
   const typeEl = document.querySelector('.ctype.sel');
   const c = { name, type:typeEl?.dataset.t||'其他', url:document.getElementById('cU').value.trim(), desc:document.getElementById('cDs').value.trim(), img:document.getElementById('cI').value.trim() };
-  const d = days.find(x=>x.id===eCredDayId); if (!d) return;
+  const d = days.find(x=>x.id===eCredDayId);
+  if (!d) { toast('找不到對應天數'); return; }
   const creds = pj(d.creds);
   if (eCredIdx!==null) creds[eCredIdx]=c; else creds.push(c);
-  await upDay(eCredDayId, { creds: JSON.stringify(creds) });
-  closeOv('credOv'); toast('✅ 憑證已儲存');
+  d.creds = JSON.stringify(creds);
+  try {
+    const { error } = await db.from('trips').update({ creds: d.creds }).eq('id', eCredDayId);
+    if (error) console.warn('saveCred error:', error);
+  } catch(e) { console.warn('saveCred exception:', e); }
+  closeOv('credOv'); toast('✅ 憑證已儲存'); renderContent();
 }
 
 async function delCred(dayId, idx) {
   const d = days.find(x=>x.id===dayId); if (!d) return;
   const creds = pj(d.creds); creds.splice(idx,1);
-  await upDay(dayId, { creds: JSON.stringify(creds) }); toast('🗑 憑證已刪除');
+  d.creds = JSON.stringify(creds);
+  try { await db.from('trips').update({ creds: d.creds }).eq('id', dayId); } catch(e) {}
+  toast('🗑 憑證已刪除'); renderContent();
 }
 
 function imgUp(e) {
