@@ -488,7 +488,10 @@ async function togT(dayId, t) {
   arr = arr.includes(t) ? arr.filter(x => x !== t) : [...arr, t];
   d.transport = arr.join(',');
   renderContent();
-  await db.from('trips').update({ transport: d.transport }).eq('id', dayId).catch(console.warn);
+  try {
+    const { error } = await db.from('trips').update({ transport: d.transport }).eq('id', dayId);
+    if (error) throw error;
+  } catch(e) { console.warn('togT error:', e); }
 }
 
 // ════════════════════════════════════════════
@@ -628,7 +631,10 @@ async function saveStop() {
   if (editStopIdx !== null) stops[editStopIdx] = s; else stops.push(s);
   stops.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
   d.stops = JSON.stringify(stops);
-  await db.from('trips').update({ stops: d.stops }).eq('id', dayId).catch(console.warn);
+  try {
+    const { error } = await db.from('trips').update({ stops: stops }).eq('id', dayId);
+    if (error) throw error;
+  } catch(e) { console.warn('saveStop error:', e); }
   closeOv('ovStop'); showToast('✅ 地點已儲存'); renderContent();
 }
 
@@ -636,7 +642,10 @@ async function delStop(dayId, idx) {
   const d = days.find(x => x.id === String(dayId)); if (!d) return;
   const stops = pj(d.stops); stops.splice(idx, 1);
   d.stops = JSON.stringify(stops);
-  await db.from('trips').update({ stops: d.stops }).eq('id', dayId).catch(console.warn);
+  try {
+    const { error } = await db.from('trips').update({ stops: stops }).eq('id', dayId);
+    if (error) throw error;
+  } catch(e) { console.warn('delStop error:', e); }
   renderContent(); showToast('🗑 地點已刪除');
 }
 
@@ -674,7 +683,10 @@ async function saveCred() {
   const creds = pj(d.creds);
   if (editCredIdx !== null) creds[editCredIdx] = c; else creds.push(c);
   d.creds = JSON.stringify(creds);
-  await db.from('trips').update({ creds: d.creds }).eq('id', editCredDayId).catch(console.warn);
+  try {
+    const { error } = await db.from('trips').update({ creds: creds }).eq('id', editCredDayId);
+    if (error) throw error;
+  } catch(e) { console.warn('saveCred error:', e); }
   closeOv('ovCred'); showToast('✅ 憑證已儲存'); renderContent();
 }
 
@@ -682,7 +694,10 @@ async function delCred(dayId, idx) {
   const d = days.find(x => x.id === String(dayId)); if (!d) return;
   const creds = pj(d.creds); creds.splice(idx, 1);
   d.creds = JSON.stringify(creds);
-  await db.from('trips').update({ creds: d.creds }).eq('id', dayId).catch(console.warn);
+  try {
+    const { error } = await db.from('trips').update({ creds: creds }).eq('id', dayId);
+    if (error) throw error;
+  } catch(e) { console.warn('delCred error:', e); }
   renderContent(); showToast('🗑 憑證已刪除');
 }
 
