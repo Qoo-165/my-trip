@@ -405,13 +405,14 @@ async function init() {
   try {
     const { data, error } = await db.from('trips').select('*').order('sort_order');
     if (error) throw error;
-    days = data || [];
+    days = (data || []).map(nd);
     if (!days.length) await seedFukuoka();
     setLive(true);
   } catch(e) {
     setLive(false);
     localSeed();
   }
+  currentId = days.length ? days[0].id : null;
   renderAll();
   doSubscribe();
 }
@@ -496,7 +497,14 @@ function selDay(id) { currentId = id; mapDayId = null; mapQ = null; renderAll();
 
 function renderContent() {
   const d = days.find(x => x.id === currentId);
-  if (!d) { document.getElementById('content').innerHTML = '<div style="text-align:center;padding:48px 20px;color:#bbb;font-size:.85rem;">暫無行程，請點擊「＋ 新增行程」</div>'; return; }
+  if (!d) {
+    const debugInfo = `days.length=${days.length}, currentId=${currentId}, ids=[${days.map(x=>x.id).join(',')}]`;
+    document.getElementById('content').innerHTML = \`<div style="text-align:center;padding:48px 20px;color:#bbb;font-size:.85rem;">
+      暫無行程，請點擊「＋ 新增行程」<br><br>
+      <span style="font-size:0.65rem;color:#ccc;word-break:break-all;">\${debugInfo}</span>
+    </div>\`;
+    return;
+  }
   const stops = pj(d.stops), creds = pj(d.creds);
   const trans = (d.transport||'').split(',').filter(Boolean);
   const dt = d.date ? new Date(d.date+'T00:00:00') : null;
