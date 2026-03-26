@@ -124,16 +124,110 @@ body{font-family:'Noto Sans TC',sans-serif;background:#efefef;color:#1a1a1a;max-
 
 /* EMPTY */
 .empty{text-align:center;padding:48px 20px;color:#bbb;font-size:.85rem;line-height:2}
+
+/* ── PASSWORD SCREEN ── */
+#pwScreen {
+position:fixed;inset:0;background:#1a1a2e;z-index:9999;
+display:flex;flex-direction:column;align-items:center;justify-content:center;
+padding:32px;
+}
+.pw-logo { font-size:3rem;margin-bottom:12px; }
+.pw-title { color:#fff;font-size:1.3rem;font-weight:700;margin-bottom:6px;letter-spacing:.04em; }
+.pw-sub { color:rgba(255,255,255,.45);font-size:.8rem;margin-bottom:36px; }
+.pw-box {
+width:100%;max-width:320px;background:rgba(255,255,255,.07);
+border-radius:16px;padding:24px 20px;
+}
+.pw-label { color:rgba(255,255,255,.5);font-size:.72rem;font-weight:500;margin-bottom:8px;letter-spacing:.06em; }
+.pw-input {
+width:100%;padding:13px 16px;border:1.5px solid rgba(255,255,255,.15);
+border-radius:12px;background:rgba(255,255,255,.08);color:#fff;
+font-size:1rem;font-family:inherit;outline:none;letter-spacing:.18em;
+margin-bottom:14px;transition:border-color .2s;
+}
+.pw-input:focus { border-color:rgba(255,255,255,.4); }
+.pw-input::placeholder { letter-spacing:.05em;color:rgba(255,255,255,.25); }
+.pw-btn {
+width:100%;padding:13px;background:#4ade80;color:#1a1a2e;border:none;
+border-radius:12px;font-size:.95rem;font-weight:700;font-family:inherit;
+cursor:pointer;transition:background .15s;
+}
+.pw-btn:active { background:#22c55e; }
+.pw-err { color:#f87171;font-size:.78rem;text-align:center;margin-top:10px;min-height:20px; }
+.pw-hint { color:rgba(255,255,255,.25);font-size:.7rem;text-align:center;margin-top:20px;line-height:1.6; }
+
+/* Share modal */
+#shareModal {
+display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+z-index:500;align-items:flex-end;backdrop-filter:blur(2px);
+}
+#shareModal.open { display:flex; }
+.share-sh {
+background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;
+margin:0 auto;padding:24px 20px 36px;animation:up .24s ease;
+}
+.share-title { font-size:1rem;font-weight:700;margin-bottom:6px; }
+.share-sub { font-size:.78rem;color:#888;margin-bottom:20px;line-height:1.5; }
+.share-link-box {
+display:flex;gap:8px;align-items:center;
+background:#f5f5f5;border-radius:10px;padding:10px 14px;margin-bottom:16px;
+}
+.share-link-url { flex:1;font-size:.75rem;color:#555;word-break:break-all;line-height:1.5; }
+.copy-btn {
+background:#1a1a2e;color:#fff;border:none;padding:8px 14px;
+border-radius:8px;font-size:.75rem;font-family:inherit;font-weight:600;cursor:pointer;
+flex-shrink:0;transition:background .15s;
+}
+.copy-btn:active { background:#2a2a4e; }
+.share-note { font-size:.72rem;color:#bbb;line-height:1.7; }
+.share-close {
+width:100%;margin-top:16px;padding:12px;border:1.5px solid #e8e8e8;
+border-radius:12px;background:none;font-family:inherit;font-size:.87rem;color:#999;cursor:pointer;
+}
 </style>
 
 </head>
 <body>
 
+<!-- PASSWORD SCREEN -->
+
+<div id="pwScreen">
+  <div class="pw-logo">✈️</div>
+  <div class="pw-title">2026 福岡之旅</div>
+  <div class="pw-sub">請輸入密碼以繼續</div>
+  <div class="pw-box">
+    <div class="pw-label">PASSWORD</div>
+    <input class="pw-input" id="pwInput" type="password" placeholder="輸入密碼…"
+      onkeydown="if(event.key==='Enter') checkPw()">
+    <button class="pw-btn" onclick="checkPw()">進入行程 →</button>
+    <div class="pw-err" id="pwErr"></div>
+  </div>
+  <div class="pw-hint">🔗 分享網址給朋友<br>朋友輸入密碼後即可共同編輯</div>
+</div>
+
+<!-- SHARE MODAL -->
+
+<div id="shareModal">
+  <div class="share-sh">
+    <div class="share-title">🔗 分享行程給朋友</div>
+    <div class="share-sub">朋友點連結後輸入密碼，即可共同編輯行程</div>
+    <div class="share-link-box">
+      <span class="share-link-url" id="shareUrl"></span>
+      <button class="copy-btn" onclick="copyLink()">複製</button>
+    </div>
+    <div class="share-note">
+      🔒 密碼：<strong id="sharePwDisplay"></strong><br>
+      請另外把密碼傳給朋友（不要放在同一則訊息）
+    </div>
+    <button class="share-close" onclick="document.getElementById('shareModal').classList.remove('open')">關閉</button>
+  </div>
+</div>
+
 <div class="bar">
   <span>✈️</span>
   <h1>2026 福岡之旅</h1>
   <div class="live"><div class="dot" id="dot"></div><span id="ltxt">連線中</span></div>
-  <button class="bar-btn" onclick="openDay()">＋ 新增行程</button>
+  <button class="bar-btn" onclick="openShare()" style="background:#2a3a2a;margin-right:4px">🔗</button><button class="bar-btn" onclick="openDay()">＋ 新增行程</button>
 </div>
 
 <div class="tabs-wrap"><div class="tabs" id="tabs"></div></div>
@@ -729,10 +823,70 @@ function showToast(msg) {
   });
 });
 
+
+// ════════════════════════════════════════════
+//  PASSWORD  &  SHARE
+// ════════════════════════════════════════════
+const TRIP_PASSWORD = 'fukuoka2026';   // ← 可以自行修改密碼
+const PW_KEY = 'trip_auth_ok';
+
+function checkPw() {
+  const val = document.getElementById('pwInput').value;
+  if (val === TRIP_PASSWORD) {
+    sessionStorage.setItem(PW_KEY, '1');
+    document.getElementById('pwScreen').style.display = 'none';
+    init();
+  } else {
+    const err = document.getElementById('pwErr');
+    err.textContent = '密碼錯誤，請再試一次';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
+    setTimeout(() => { err.textContent = ''; }, 2500);
+  }
+}
+
+function openShare() {
+  const url = window.location.href.split('?')[0];
+  document.getElementById('shareUrl').textContent = url;
+  document.getElementById('sharePwDisplay').textContent = TRIP_PASSWORD;
+  document.getElementById('shareModal').classList.add('open');
+}
+
+function copyLink() {
+  const url = document.getElementById('shareUrl').textContent;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '已複製！'; btn.style.background = '#4ade80'; btn.style.color = '#1a1a2e';
+    setTimeout(() => { btn.textContent = '複製'; btn.style.background = ''; btn.style.color = ''; }, 2000);
+  }).catch(() => {
+    // fallback for older browsers
+    const el = document.createElement('textarea');
+    el.value = url; document.body.appendChild(el);
+    el.select(); document.execCommand('copy'); document.body.removeChild(el);
+    showToast('連結已複製！');
+  });
+}
+
+// click outside share modal to close
+document.getElementById('shareModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
+
+// ── AUTO LOGIN: if already authenticated this session, skip password ──
+function start() {
+  if (sessionStorage.getItem(PW_KEY) === '1') {
+    document.getElementById('pwScreen').style.display = 'none';
+    init();
+  } else {
+    // show password screen, focus input
+    setTimeout(() => document.getElementById('pwInput').focus(), 100);
+  }
+}
+
 // ════════════════════════════════════════════
 //  START
 // ════════════════════════════════════════════
-init();
+start();
 </script>
 
 </body>
