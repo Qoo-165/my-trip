@@ -531,9 +531,13 @@ async function saveDay() {
 
   if (id) {
     // ── 編輯 ──
-    await db.from('trips').update(payload).eq('id', id).catch(console.warn);
+    try {
+      const { error } = await db.from('trips').update(payload).eq('id', id);
+      if (error) throw error;
+    } catch(e) { console.warn('update error:', e); }
     const d = days.find(x => x.id === id);
     if (d) Object.assign(d, payload);
+    btn.disabled = false; btn.textContent = '儲存';
     closeOv('ovDay');
     showToast('✅ 已儲存');
     renderTabs(); renderContent();
